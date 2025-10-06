@@ -30,11 +30,54 @@ Or import manually from the repo:
 Import-Module ./GitIdentities
 ```
 
+
+## Why use Add-GitIdentity? What does it automate?
+
+Manually managing multiple Git/SSH identities is error-prone and can lead to credential leaks or misattributed commits. `Add-GitIdentity` automates:
+- Creation of all required config files and SSH keys
+- Per-folder rules using Git's `includeIf` so the right identity is always used
+- Idempotent updates: run as many times as needed, only changes what's necessary
+- Cross-user and cross-platform support
+
+**Example: Adding identities from a JSON file (with example data)**
+
+```json
+{
+    "identities": [
+        {
+            "alias": "github-personal",
+            "platform": "github",
+            "name": "Jane Example",
+            "username": "janeuser",
+            "email": "jane@example.com",
+            "folders": ["C:/repos/personal", "C:/repos/opensource"]
+        },
+        {
+            "alias": "work-acme",
+            "platform": "azure",
+            "name": "Jane Example",
+            "username": "jane.acme@acme.com",
+            "email": "jane.acme@acme.com",
+            "folders": ["C:/repos/acme"]
+        }
+    ]
+}
+```
+
+You can provision all identities with:
+
+```powershell
+Add-GitIdentity -Alias "github-personal" -Platform "github" -Name "Jane Example" -Username "janeuser" -Email "jane@example.com" -Folders @("C:/repos/personal","C:/repos/opensource")
+Add-GitIdentity -Alias "work-acme" -Platform "azure" -Name "Jane Example" -Username "jane.acme@acme.com" -Email "jane.acme@acme.com" -Folders @("C:/repos/acme")
+```
+
+This guarantees each repo uses the correct identity, SSH key, and credentials automatically.
+
 ## Usage
 
 ### Add a new identity
 ```powershell
-Add-GitIdentity -Alias work -Name "Jane Doe" -Email jane@company.com -Username janed -Folders C:\Work\Repos
+Add-GitIdentity -Alias work -Name "Jane Example" -Email jane@company.com -Username janed -Folders C:\Work\Repos
 ```
 
 ### List existing identities

@@ -22,11 +22,58 @@ Install-Module -Name GitIdentities -Scope CurrentUser
 Import-Module ./GitIdentities
 ```
 
+
+## Why use Add-GitIdentity and what does it solve?
+
+Managing multiple Git and SSH identities on the same machine can be error-prone and tedious, especially when switching between work, personal, and client repositories. Manual configuration often leads to mistakes, credential leaks, or misattributed commits.
+
+**GitIdentities** solves this by providing a single command, `Add-GitIdentity`, which:
+- Creates all necessary configuration files and SSH keys for each identity
+- Automatically sets up per-folder rules using Git's `includeIf` so the right identity is used in each repo
+- Is idempotent: you can run it as many times as you want, and it will only update what is needed
+- Supports cross-platform and cross-user scenarios
+
+**Example: Adding multiple identities from a JSON file**
+
+Suppose you have a file like this (with example data):
+
+```json
+{
+	"identities": [
+		{
+			"alias": "github-personal",
+			"platform": "github",
+			"name": "Jane Example",
+			"username": "janeuser",
+			"email": "jane@example.com",
+			"folders": ["C:/repos/personal", "C:/repos/opensource"]
+		},
+		{
+			"alias": "work-acme",
+			"platform": "azure",
+			"name": "Jane Example",
+			"username": "jane.acme@acme.com",
+			"email": "jane.acme@acme.com",
+			"folders": ["C:/repos/acme"]
+		}
+	]
+}
+```
+
+You can add all identities with:
+
+```powershell
+Add-GitIdentity -Alias "github-personal" -Platform "github" -Name "Jane Example" -Username "janeuser" -Email "jane@example.com" -Folders @("C:/repos/personal","C:/repos/opensource")
+Add-GitIdentity -Alias "work-acme" -Platform "azure" -Name "Jane Example" -Username "jane.acme@acme.com" -Email "jane.acme@acme.com" -Folders @("C:/repos/acme")
+```
+
+This ensures each repo uses the correct identity, SSH key, and credentials automatically.
+
 ## Basic Usage
 
 ```powershell
 # Add an identity
-Add-GitIdentity -Alias work -Name "Jane Doe" -Email jane@company.com -Username janed -Folders C:\Work\Repos
+Add-GitIdentity -Alias work -Name "Jane Example" -Email jane@company.com -Username janed -Folders C:\Work\Repos
 
 # List identities
 Get-GitIdentities
