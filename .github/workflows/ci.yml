@@ -7,9 +7,6 @@ on:
     branches: [ master ]
   workflow_dispatch:
 
-env:
-  CI: true
-
 jobs:
 
   test-powershell:
