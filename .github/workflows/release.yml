@@ -1,0 +1,205 @@
+name: Release and Documentation
+
+on:
+  push:
+    tags:
+      - 'v*'
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  create-release:
+    name: Create Release Package
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup PowerShell
+      uses: actions/setup-powershell@v1
+      with:
+        powershell-version: '7.x'
+    
+    - name: Generate Module Manifest
+      run: |
+        Write-Host "=== Generating PowerShell Module Manifest ==="
+        
+        $manifestPath = "tools/GitIdentities/GitIdentities.psd1"
+        $version = if ($env:GITHUB_REF -match 'refs/tags/v(.+)') { $matches[1] } else { "1.0.0" }
+        
+        # Get all public functions
+        $publicFunctions = Get-ChildItem "tools/GitIdentities/Public/*.ps1" | ForEach-Object { 
+          [System.IO.Path]::GetFileNameWithoutExtension($_.Name) 
+        }
+        
+        $manifestData = @{
+          RootModule = 'GitIdentities.psm1'
+          ModuleVersion = $version
+          GUID = [System.Guid]::NewGuid().ToString()
+          Author = 'GitIdentities Module'
+          CompanyName = 'Unknown'
+          Copyright = "(c) $(Get-Date -Format yyyy) GitIdentities. All rights reserved."
+          Description = 'PowerShell module for managing multiple Git/SSH identities with automatic per-repository configuration'
+          PowerShellVersion = '5.1'
+          FunctionsToExport = $publicFunctions
+          CmdletsToExport = @()
+          VariablesToExport = @()
+          AliasesToExport = @()
+          PrivateData = @{
+            PSData = @{
+              Tags = @('Git', 'SSH', 'Identity', 'Configuration', 'Repository')
+              LicenseUri = 'https://github.com/your-repo/GitIdentities/blob/main/LICENSE'
+              ProjectUri = 'https://github.com/your-repo/GitIdentities'
+              IconUri = ''
+              ReleaseNotes = 'See CHANGELOG.md for release notes'
+            }
+          }
+        }
+        
+        New-ModuleManifest -Path $manifestPath @manifestData
+        Write-Host "✓ Module manifest created: $manifestPath"
+      shell: pwsh
+    
+    - name: Create Module Bundle
+      run: |
+        Write-Host "=== Creating Release Bundle ==="
+        
+        $version = if ($env:GITHUB_REF -match 'refs/tags/v(.+)') { $matches[1] } else { "1.0.0" }
+        $releaseDir = "release/GitIdentities-$version"
+        
+        # Create release directory structure
+        New-Item -Path $releaseDir -ItemType Directory -Force | Out-Null
+        
+        # Copy module files
+        Copy-Item -Path "tools/GitIdentities/*" -Destination $releaseDir -Recurse -Force
+        
+        # Create ZIP package
+        $zipPath = "GitIdentities-$version.zip"
+        Compress-Archive -Path $releaseDir -DestinationPath $zipPath
+        
+        Write-Host "✓ Release package created: $zipPath"
+        Write-Host "Package contents:"
+        Get-ChildItem $releaseDir -Recurse | ForEach-Object { Write-Host "  $($_.FullName)" }
+      shell: pwsh
+    
+    - name: Upload Release Asset
+      uses: actions/upload-artifact@v3
+      with:
+        name: GitIdentities-Module
+        path: GitIdentities-*.zip
+    
+    - name: Create GitHub Release
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: GitIdentities-*.zip
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+        body: |
+          ## GitIdentities PowerShell Module Release
+          
+          ### Features
+          - ✅ Multi-identity Git/SSH management
+          - ✅ Automatic platform detection (GitHub, GitLab, Azure DevOps, Bitbucket)  
+          - ✅ Per-repository configuration with Git includeIf
+          - ✅ SSH key generation with ed25519/RSA fallback
+          - ✅ Idempotent operations (safe to run multiple times)
+          - ✅ Cross-user profile support
+          - ✅ Comprehensive logging and dry-run mode
+          
+          ### Installation
+          ```powershell
+          # Extract the ZIP to your PowerShell modules directory
+          # Then import the module:
+          Import-Module GitIdentities
+          ```
+          
+          ### Quick Start
+          ```powershell
+          # Add a new identity
+          Add-GitIdentity -Alias work -Name "Your Name" -Email work@company.com -Username workuser -Folders C:\Work\Repos
+          
+          # List all identities  
+          Get-GitIdentities
+          
+          # Test identity status
+          Test-GitIdentityProvision -Alias work
+          ```
+          
+          See README.md for complete documentation.
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update-documentation:
+    name: Update Documentation
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js for documentation tools
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    
+    - name: Generate PowerShell Help Documentation  
+      run: |
+        # Install PowerShell on Ubuntu
+        sudo apt-get update
+        sudo apt-get install -y wget apt-transport-https software-properties-common
+        wget -q "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb"
+        sudo dpkg -i packages-microsoft-prod.deb
+        sudo apt-get update
+        sudo apt-get install -y powershell
+        
+        # Generate help documentation
+        pwsh -c "
+        Write-Host '=== Generating PowerShell Help Documentation ==='
+        
+        # Create docs directory
+        New-Item -Path 'docs' -ItemType Directory -Force | Out-Null
+        
+        # Get all public functions
+        \$publicFunctions = Get-ChildItem 'tools/GitIdentities/Public/*.ps1'
+        
+        foreach (\$funcFile in \$publicFunctions) {
+          \$funcName = [System.IO.Path]::GetFileNameWithoutExtension(\$funcFile.Name)
+          Write-Host \"Processing: \$funcName\"
+          
+          # Extract help from function file (basic extraction)
+          \$content = Get-Content \$funcFile.FullName -Raw
+          if (\$content -match '(?s)<#(.+?)#>') {
+            \$helpContent = \$matches[1].Trim()
+            \$mdContent = @\"
+# \$funcName
+
+\`\`\`powershell
+\$helpContent
+\`\`\`
+
+## Examples
+
+See README.md for usage examples.
+\"@
+            \$mdPath = \"docs/\$funcName.md\"
+            \$mdContent | Out-File -FilePath \$mdPath -Encoding UTF8
+            Write-Host \"  ✓ Generated: \$mdPath\"
+          }
+        }
+        
+        Write-Host '✓ Documentation generation completed'
+        "
+    
+    - name: Deploy to GitHub Pages
+      if: github.ref == 'refs/heads/main' 
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs
+        publish_branch: gh-pages
+        commit_message: 'docs: update PowerShell module documentation'
