@@ -175,17 +175,17 @@ jobs:
           \$content = Get-Content \$funcFile.FullName -Raw
           if (\$content -match '(?s)<#(.+?)#>') {
             \$helpContent = \$matches[1].Trim()
-            \$mdContent = @\"
-# \$funcName
+            $mdContent = @'
+# $funcName
 
-\`\`\`powershell
-\$helpContent
-\`\`\`
+```powershell
+$helpContent
+```
 
 ## Examples
 
 See README.md for usage examples.
-\"@
+'@
             \$mdPath = \"docs/\$funcName.md\"
             \$mdContent | Out-File -FilePath \$mdPath -Encoding UTF8
             Write-Host \"  ✓ Generated: \$mdPath\"
