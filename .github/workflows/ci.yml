@@ -74,4 +74,3 @@ jobs:
             Write-Host "`nTest result files created:"
             Get-ChildItem "Tests\*TestResults.xml" | ForEach-Object { Write-Host "  - $($_.Name)" }
           }
-        shell: pwsh
