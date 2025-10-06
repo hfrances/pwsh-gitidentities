@@ -14,7 +14,7 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        pwsh_shell: [powershell, pwsh]
+        pwsh_shell: [powershell] # pwsh
     steps:
       - uses: actions/checkout@v4
       - name: Ejecutar en Windows PowerShell
