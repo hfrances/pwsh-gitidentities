@@ -14,11 +14,11 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        shell: [powershell, pwsh]
+        pwsh_shell: [powershell, pwsh]
     steps:
       - uses: actions/checkout@v4
-      - name: Ejecutar en ${{ matrix.shell }}
-        shell: ${{ matrix.shell }}
+      - name: Ejecutar en ${{ matrix.pwsh_shell }}
+        shell: ${{ matrix.pwsh_shell }}
         run: |
           Write-Host "Versión de PowerShell:"
           $PSVersionTable.PSVersion
