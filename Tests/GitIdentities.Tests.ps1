@@ -5,6 +5,9 @@ BeforeAll {
     # Import module under test
     $ModulePath = Join-Path $PSScriptRoot "..\GitIdentities"
     Import-Module $ModulePath -Force
+    # Dot-source private functions before tests
+    $privatePath = Join-Path $PSScriptRoot '..\GitIdentities\Private'
+    Get-ChildItem "$privatePath\*.ps1" | ForEach-Object { . $_.FullName }
     
     # Test user for all operations (as requested)
     $script:TestUser = "patata"
