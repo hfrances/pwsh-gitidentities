@@ -1,0 +1,57 @@
+# Run-ModuleTests.ps1
+# Ejecuta validaciones de sintaxis y pruebas Pester para el módulo GitIdentities
+
+Write-Host "Versión de PowerShell:"
+$PSVersionTable.PSVersion
+
+# === Module Syntax Validation ===
+$moduleFiles = Get-ChildItem -Path "GitIdentities" -Recurse -Filter "*.ps1"
+$errors = @()
+foreach ($file in $moduleFiles) {
+    Write-Host "Checking: $($file.FullName)"
+    try {
+        $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $file.FullName -Raw), [ref]$null)
+        Write-Host "  ✓ OK" -ForegroundColor Green
+    }
+    catch {
+        Write-Host "  ✗ SYNTAX ERROR: $($_.Exception.Message)" -ForegroundColor Red
+        $errors += "$($file.Name): $($_.Exception.Message)"
+    }
+}
+if ($errors.Count -gt 0) {
+    Write-Host "`n=== SYNTAX ERRORS FOUND ===" -ForegroundColor Red
+    $errors | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+    exit 1
+}
+Write-Host "`n✓ All files passed syntax validation" -ForegroundColor Green
+
+# Prepare test user home and .gitconfig
+$TestUser = "patata"
+$TestUserHome = "C:\Users\$TestUser"
+if (-not (Test-Path $TestUserHome)) {
+    New-Item -Path $TestUserHome -ItemType Directory -Force | Out-Null
+}
+$gitconfig = Join-Path $TestUserHome ".gitconfig"
+if (-not (Test-Path $gitconfig)) {
+    Set-Content -Path $gitconfig -Value "" -Encoding UTF8
+}
+Write-Host "✓ Test user home and .gitconfig prepared at $TestUserHome" -ForegroundColor Green
+
+# Install Pester
+if (-not (Get-Module -ListAvailable -Name Pester)) {
+    Install-Module -Name Pester -Force -SkipPublisherCheck
+}
+Import-Module Pester -Force
+Write-Host "✓ Pester installed and imported" -ForegroundColor Green
+
+# Run all Pester tests in the Tests folder
+Invoke-Pester -Path ./Tests -Output Detailed
+Write-Host ""
+Write-Host "PowerShell Version: $($PSVersionTable.PSVersion)"
+Write-Host "OS: $env:OS"
+Write-Host "Test Date: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')"
+# Display test artifacts if they exist
+if (Test-Path "Tests\*TestResults.xml") {
+    Write-Host "`nTest result files created:"
+    Get-ChildItem "Tests\*TestResults.xml" | ForEach-Object { Write-Host "  - $($_.Name)" }
+}
