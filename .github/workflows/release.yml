@@ -157,41 +157,8 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y powershell
         
-        # Generate help documentation
-        pwsh -c "
-        Write-Host '=== Generating PowerShell Help Documentation ==='
-        
-        # Create docs directory
-        New-Item -Path 'docs' -ItemType Directory -Force | Out-Null
-        
-        # Get all public functions
-        \$publicFunctions = Get-ChildItem 'tools/GitIdentities/Public/*.ps1'
-        
-        foreach (\$funcFile in \$publicFunctions) {
-          \$funcName = [System.IO.Path]::GetFileNameWithoutExtension(\$funcFile.Name)
-          Write-Host \"Processing: \$funcName\"
-          
-          # Extract help from function file (basic extraction)
-          \$content = Get-Content \$funcFile.FullName -Raw
-          if (\$content -match '(?s)<#(.+?)#>') {
-            \$helpContent = \$matches[1].Trim()
-            $mdContent = @'
-# $funcName
-
-```powershell
-$helpContent
-```
-
-## Examples
-
-See README.md for usage examples.
-'@
-            \$mdPath = \"docs/\$funcName.md\"
-            \$mdContent | Out-File -FilePath \$mdPath -Encoding UTF8
-            Write-Host \"  ✓ Generated: \$mdPath\"
-          }
-        }
-        
+        # Generate help documentation using external script
+        pwsh ./.github/workflows/scripts/Generate-MarkdownDocs.ps1
         Write-Host '✓ Documentation generation completed'
         "
     
