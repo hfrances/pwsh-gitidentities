@@ -65,39 +65,6 @@ jobs:
 
           # Run all Pester tests in the Tests folder
           Invoke-Pester -Path ./Tests -Output Detailed
-          Write-Host "✓ Test user home and .gitconfig prepared at $TestUserHome" -ForegroundColor Green
-        shell: pwsh
-
-      - name: Install Pester
-        run: |
-          if (-not (Get-Module -ListAvailable -Name Pester)) {
-            Install-Module -Name Pester -Force -SkipPublisherCheck
-          }
-          Import-Module Pester -Force
-          Write-Host "✓ Pester installed and imported" -ForegroundColor Green
-        shell: pwsh
-
-      - name: Run Pester Tests
-        run: |
-          # Run all Pester tests in the Tests folder
-          Invoke-Pester -Path ./Tests -Output Detailed
-        shell: pwsh
-      
-      - name: Upload Test Results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: test-results-${{ matrix.os }}-ps${{ matrix.powershell-version }}
-          path: |
-            Tests/*TestResults.xml
-            Tests/*Coverage.xml
-          retention-days: 30
-
-      - name: Generate Test Report
-        run: |
-          Write-Host "=== CI Test Summary ==="
-          Write-Host "✓ Module syntax validation passed"
-          Write-Host "✓ Pester tests executed"
           Write-Host ""
           Write-Host "PowerShell Version: $($PSVersionTable.PSVersion)"
           Write-Host "OS: $env:OS"
