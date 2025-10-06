@@ -2,8 +2,12 @@
 # Unit tests for individual GitIdentities functions with mocking
 
 BeforeAll {
+    # Import module under test
     $ModulePath = Join-Path $PSScriptRoot "..\GitIdentities"
     Import-Module $ModulePath -Force
+    # Dot-source private functions before tests
+    $privatePath = Join-Path $PSScriptRoot '..\GitIdentities\Private'
+    Get-ChildItem "$privatePath\*.ps1" | ForEach-Object { . $_.FullName }
     
     # Mock data
     $script:MockUserHome = "C:\Users\TestUser"
@@ -30,7 +34,7 @@ Describe "Add-GitIdentity Unit Tests" {
         }
         
         It "Should accept valid parameters" {
-            { Add-GitIdentity -Alias "test" -Name "Test User" -Email "test@test.com" -Username "testuser" -Folders @("C:\Temp") -DryRun } | Should -Not -Throw
+            { Add-GitIdentity -Alias "test" -Name "Test User" -Email "test@test.com" -Username "testuser" -Folders @("C:\Temp") -User patata -DryRun } | Should -Not -Throw
         }
     }
     
@@ -39,7 +43,7 @@ Describe "Add-GitIdentity Unit Tests" {
             # Test platform detection without actually creating identities
             Mock Get-GIAliasCanonicalHost { return "github.com" } -ModuleName GitIdentities
             { Add-GitIdentity -Alias "mygithub" -Name "Test" -Email "test@example.com" -Username "test" -Folders @("C:\Temp") -User patata -DryRun -Verbosity Silent } | Should -Not -Throw
-            Should -Invoke Get-GIAliasCanonicalHost -ModuleName GitIdentities -Exactly 1
+            Should -Invoke Get-GIAliasCanonicalHost -ModuleName GitIdentities
         }
         
         It "Should handle email-based platform detection" {

@@ -62,6 +62,9 @@ $script:TestResults = @{
 # Import required modules
 $ModulePath = Join-Path $PSScriptRoot "..\GitIdentities"
 $TestConfigPath = Join-Path $PSScriptRoot "TestConfig.ps1"
+# Dot-source private functions before tests
+$privatePath = Join-Path $PSScriptRoot '..\GitIdentities\Private'
+Get-ChildItem "$privatePath\*.ps1" | ForEach-Object { . $_.FullName }
 
 if (-not (Test-Path $ModulePath)) {
     throw "GitIdentities module not found at: $ModulePath"
