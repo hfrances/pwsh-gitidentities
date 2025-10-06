@@ -77,7 +77,7 @@ function Remove-GIIncludeIfBlocks {
 }
 
 function Set-GISshKey {
-  param([string]$UserHome,[string]$Alias,[string]$Email,[switch]$Force,[switch]$DryRun)
+  param([string]$UserHome,[string]$Alias,[string]$Email,[string]$Algorithm,[switch]$Force,[switch]$DryRun)
   $sshDir = Join-Path $UserHome '.ssh'
   $privateKey = Join-Path $sshDir ("id_" + $Alias)
   $publicKey  = $privateKey + '.pub'
@@ -98,7 +98,12 @@ function Set-GISshKey {
   try {
     if (-not (Test-Path -LiteralPath $sshDir)) { New-Item -ItemType Directory -Path $sshDir -Force | Out-Null }
     $cmd = (Get-Command ssh-keygen -ErrorAction SilentlyContinue).Source
-    $argsPrimary = @('-t','ed25519','-C',$Email,'-f',$privateKey,'-N','')
+    $algo = if ($Algorithm) { $Algorithm.ToLowerInvariant() } else { 'ed25519' }
+    if ($algo -eq 'rsa') {
+      $argsPrimary = @('-t','rsa','-b','4096','-C',$Email,'-f',$privateKey,'-N','')
+    } else {
+      $argsPrimary = @('-t','ed25519','-C',$Email,'-f',$privateKey,'-N','')
+    }
     Write-GILog -Level DEBUG -Message ("Invoking ssh-keygen primary: {0} {1}" -f $cmd, ($argsPrimary -join ' '))
     $primaryOutput = ssh-keygen @argsPrimary 2>&1
     $primaryOutput | ForEach-Object { $line=$_.ToString().Trim(); if ($line) { Write-GILog -Level DEBUG -Message "ssh-keygen: $line" } }
@@ -107,11 +112,15 @@ function Set-GISshKey {
       Write-GILog -Level WARN -Message "Primary ssh-keygen attempt failed (exit $LASTEXITCODE). Trying fallback via cmd.exe"
       $quotedEmail = '"' + $Email + '"'
       $quotedKey = '"' + $privateKey + '"'
-      $cmdLine = "ssh-keygen -t ed25519 -C $quotedEmail -f $quotedKey -N `"`""
+      if ($algo -eq 'rsa') {
+        $cmdLine = "ssh-keygen -t rsa -b 4096 -C $quotedEmail -f $quotedKey -N `"`"" 
+      } else {
+        $cmdLine = "ssh-keygen -t ed25519 -C $quotedEmail -f $quotedKey -N `"`"" 
+      }
       Write-GILog -Level DEBUG -Message "Fallback command: $cmdLine"
       $fallbackOutput = cmd /c $cmdLine 2>&1
       $fallbackOutput | ForEach-Object { $line=$_.ToString().Trim(); if ($line) { Write-GILog -Level DEBUG -Message "ssh-keygen(fallback): $line" } }
-      if (-not (Test-Path -LiteralPath $privateKey)) {
+      if (-not (Test-Path -LiteralPath $privateKey) -and $algo -ne 'rsa') {
         Write-GILog -Level WARN -Message "Fallback did not create ed25519 key. Trying RSA 4096"
         $cmdLine2 = "ssh-keygen -t rsa -b 4096 -C $quotedEmail -f $quotedKey -N `"`""
         Write-GILog -Level DEBUG -Message "RSA fallback command: $cmdLine2"

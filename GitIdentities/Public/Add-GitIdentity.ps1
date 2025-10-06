@@ -29,9 +29,10 @@ Log verbosity (Silent|Error|Warn|Info|Debug).
 .EXAMPLE
 Add-GitIdentity -Alias work -Name "Jane Doe" -Email jane@corp.com -Username janed -Folders C:\Repos\Work1,C:\Repos\Work2
 #>
+
     param(
-    [Parameter(Mandatory)][string]$Alias,
-    [string]$Platform,
+        [Parameter(Mandatory)][string]$Alias,
+        [string]$Platform,
         [Parameter(Mandatory)][string]$Name,
         [Parameter(Mandatory)][string]$Email,
         [Parameter(Mandatory)][string]$Username,
@@ -40,8 +41,28 @@ Add-GitIdentity -Alias work -Name "Jane Doe" -Email jane@corp.com -Username jane
         [switch]$ForceRegenKeys,
         [switch]$DryRun,
         [switch]$FileLog,
-        [ValidateSet('Silent','Error','Warn','Info','Debug')][string]$Verbosity = 'Info'
+        [ValidateSet('Silent','Error','Warn','Info','Debug')][string]$Verbosity = 'Info',
+        [ValidateSet('ed25519','rsa')][string]$SshAlgorithm
     )
+    # Algoritmos por plataforma (puedes ampliar según necesidades)
+    $DefaultSshAlgorithm = 'ed25519'
+    $SshAlgorithmByPlatform = @{
+        'github' = 'ed25519'
+        'gitlab' = 'ed25519'
+        'bitbucket' = 'ed25519'
+        'azure' = 'rsa'
+    }
+
+    # Determinar algoritmo efectivo
+    $effectiveSshAlgorithm = $SshAlgorithm
+    if (-not $effectiveSshAlgorithm) {
+        $platKey = if ($Platform) { $Platform.ToLowerInvariant() } else { '' }
+        if ($platKey -and $SshAlgorithmByPlatform.ContainsKey($platKey)) {
+            $effectiveSshAlgorithm = $SshAlgorithmByPlatform[$platKey]
+        } else {
+            $effectiveSshAlgorithm = $DefaultSshAlgorithm
+        }
+    }
 
     $script:GitIdentitiesVerbosity = $Verbosity
     $userHome = Get-GIUserHome -User $User
@@ -106,7 +127,7 @@ Add-GitIdentity -Alias work -Name "Jane Doe" -Email jane@corp.com -Username jane
         $aliasCfg = Set-GIAliasGitConfig -UserHome $userHome -Alias $Alias -Name $Name -Email $Email -Username $Username -DryRun:$DryRun
         Write-GILog -Level DEBUG -Message "Alias gitconfig ensured: $aliasCfg"
         Set-GIIncludeIfBlocks -UserHome $userHome -Alias $Alias -Folders $normalized -DryRun:$DryRun
-        $keyPath = Set-GISshKey -UserHome $userHome -Alias $Alias -Email $Email -Force:$ForceRegenKeys -DryRun:$DryRun
+        $keyPath = Set-GISshKey -UserHome $userHome -Alias $Alias -Email $Email -Algorithm $effectiveSshAlgorithm -Force:$ForceRegenKeys -DryRun:$DryRun
         Set-GISshHostBlock -UserHome $userHome -Alias $Alias -Platform $Platform -DryRun:$DryRun | Out-Null
     } catch {
         Write-GILog -Level ERROR -Message "Provisioning error: $($_.Exception.Message)"
