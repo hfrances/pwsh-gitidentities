@@ -65,6 +65,21 @@ jobs:
         Write-Host "`n✓ All files passed syntax validation" -ForegroundColor Green
       shell: pwsh
     
+
+    - name: Prepare test user home and .gitconfig
+      run: |
+        $TestUser = "patata"
+        $TestUserHome = "C:\\Users\\$TestUser"
+        if (-not (Test-Path $TestUserHome)) {
+          New-Item -Path $TestUserHome -ItemType Directory -Force | Out-Null
+        }
+        $gitconfig = Join-Path $TestUserHome ".gitconfig"
+        if (-not (Test-Path $gitconfig)) {
+          Set-Content -Path $gitconfig -Value "" -Encoding UTF8
+        }
+        Write-Host "✓ Test user home and .gitconfig prepared at $TestUserHome" -ForegroundColor Green
+      shell: pwsh
+
     - name: Install Pester
       run: |
         if (-not (Get-Module -ListAvailable -Name Pester)) {
