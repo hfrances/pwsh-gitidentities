@@ -16,9 +16,9 @@ foreach ($file in $moduleFiles) {
     $parseError = $null
     try {
         $null = [System.Management.Automation.PSParser]::Tokenize($content, [ref]$parseError)
-        Write-Host "  ✓ OK" -ForegroundColor Green
+        Write-Host "  OK" -ForegroundColor Green
     } catch {
-        Write-Host ("  ✗ SYNTAX ERROR: {0}" -f $_.Exception.Message) -ForegroundColor Red
+        Write-Host ("  SYNTAX ERROR: {0}" -f $_.Exception.Message) -ForegroundColor Red
         $errors += ("{0}: {1}" -f $file.Name, $_.Exception.Message)
     }
 }
@@ -27,7 +27,7 @@ if ($errors.Count -gt 0) {
     $errors | ForEach-Object { Write-Host ("  {0}" -f $_) -ForegroundColor Red }
     exit 1
 }
-Write-Host "`n✓ All files passed syntax validation" -ForegroundColor Green
+Write-Host "`nAll files passed syntax validation" -ForegroundColor Green
 
 # Prepare test user home and .gitconfig
 $TestUser = "patata"
@@ -39,14 +39,14 @@ $gitconfig = Join-Path $TestUserHome ".gitconfig"
 if (-not (Test-Path $gitconfig)) {
     Set-Content -Path $gitconfig -Value "" -Encoding UTF8
 }
-Write-Host ("✓ Test user home and .gitconfig prepared at {0}" -f $TestUserHome) -ForegroundColor Green
+Write-Host ("Test user home and .gitconfig prepared at {0}" -f $TestUserHome) -ForegroundColor Green
 
 # Instalar Pester si no está disponible
 if (-not (Get-Module -ListAvailable -Name Pester)) {
     Install-Module -Name Pester -Force -SkipPublisherCheck
 }
 Import-Module Pester -Force
-Write-Host "✓ Pester installed and imported" -ForegroundColor Green
+Write-Host "Pester installed and imported" -ForegroundColor Green
 
 # Ejecutar todos los tests Pester en la carpeta Tests
 Invoke-Pester -Path ./Tests -Output Detailed
