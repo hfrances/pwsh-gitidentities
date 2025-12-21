@@ -10,7 +10,7 @@ Cuando haya conflicto, se prioriza: StateFile > AliasGitConfig > GlobalInclude.
 #>
   [CmdletBinding()] param(
     [string]$User,
-    [ValidateSet('Silent','Error','Warn','Info','Debug')][string]$Verbosity='Info'
+    [ValidateSet('Silent','Error','Warn','Info','Debug')][string]$Verbosity='Warn'
   )
   $script:GitIdentitiesVerbosity = $Verbosity
   $userHome = Get-GIUserHome -User $User

@@ -9,7 +9,7 @@ Removes an identity completely or a single folder.
     [string]$Folder,
     [string]$User,
     [switch]$DryRun,
-    [ValidateSet('Silent','Error','Warn','Info','Debug')][string]$Verbosity='Info'
+    [ValidateSet('Silent','Error','Warn','Info','Debug')][string]$Verbosity='Warn'
   )
   $script:GitIdentitiesVerbosity = $Verbosity
   $userHome = Get-GIUserHome -User $User

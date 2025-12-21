@@ -38,31 +38,44 @@ Add-GitIdentity -Alias work -Name "Jane Doe" -Email jane@corp.com -Username jane
         [Parameter(Mandatory)][string]$Username,
         [Parameter(Mandatory)][string[]]$Folders,
         [string]$User,
-        [switch]$ForceRegenKeys,
+        [ValidateSet('ed25519','rsa')][string]$SshAlgorithm,
+        [switch]$SshForceRegenKeys,
+        [string[]]$SshUser,
         [switch]$DryRun,
         [switch]$FileLog,
-        [ValidateSet('Silent','Error','Warn','Info','Debug')][string]$Verbosity = 'Info',
-        [ValidateSet('ed25519','rsa')][string]$SshAlgorithm
+        [ValidateSet('Silent','Error','Warn','Info','Debug')][string]$Verbosity = 'Warn'
     )
-    # Algoritmos por plataforma (puedes ampliar según necesidades)
-    $DefaultSshAlgorithm = 'ed25519'
-    $SshAlgorithmByPlatform = @{
-        'github' = 'ed25519'
-        'gitlab' = 'ed25519'
-        'bitbucket' = 'ed25519'
-        'azure' = 'rsa'
-    }
-
-    # Determinar algoritmo efectivo
+    # Determinar algoritmo efectivo usando configuración centralizada
     $effectiveSshAlgorithm = $SshAlgorithm
     if (-not $effectiveSshAlgorithm) {
         $platKey = if ($Platform) { $Platform.ToLowerInvariant() } else { '' }
-        if ($platKey -and $SshAlgorithmByPlatform.ContainsKey($platKey)) {
-            $effectiveSshAlgorithm = $SshAlgorithmByPlatform[$platKey]
+        if ($platKey -and $script:GIPlatformMap.ContainsKey($platKey)) {
+            $effectiveSshAlgorithm = $script:GIPlatformMap[$platKey].SshAlgorithm
         } else {
-            $effectiveSshAlgorithm = $DefaultSshAlgorithm
+            $effectiveSshAlgorithm = $script:DefaultSshAlgorithm
         }
     }
+
+    # Determinar usuario(s) SSH efectivo(s) usando configuración centralizada
+    $effectiveSshUser = $SshUser
+    if (-not $effectiveSshUser -or $effectiveSshUser.Count -eq 0) {
+        $platKey = if ($Platform) { $Platform.ToLowerInvariant() } else { '' }
+        if ($platKey -and $script:GIPlatformMap.ContainsKey($platKey)) {
+            # Procesar el array de SshUsers, reemplazando {{USERNAME}} por el $Username real
+            $effectiveSshUser = @($script:GIPlatformMap[$platKey].SshUsers | ForEach-Object {
+                if ($_ -eq '{{USERNAME}}') { 
+                    if ($Username) { $Username } else { $null }
+                } else { 
+                    $_ 
+                }
+            } | Where-Object { $_ -ne $null })
+        } else {
+            $effectiveSshUser = @('git')
+        }
+    } elseif ($effectiveSshUser -is [string]) {
+        $effectiveSshUser = @($effectiveSshUser)
+    }
+    Write-GILog  -Level INFO -Message "Using SSH users: $($effectiveSshUser -join ', ')"
 
     $script:GitIdentitiesVerbosity = $Verbosity
     $userHome = Get-GIUserHome -User $User
@@ -73,12 +86,13 @@ Add-GitIdentity -Alias work -Name "Jane Doe" -Email jane@corp.com -Username jane
     if (-not $PSBoundParameters.ContainsKey('Platform') -or [string]::IsNullOrWhiteSpace($Platform)) {
         try {
             $derivedHost = Get-GIAliasCanonicalHost -Alias $Alias -Email $Email
-            switch ($derivedHost.ToLowerInvariant()) {
-                'github.com' { $Platform='github'; break }
-                'dev.azure.com' { $Platform='azure'; break }
-                'gitlab.com' { $Platform='gitlab'; break }
-                'bitbucket.org' { $Platform='bitbucket'; break }
-                default { $Platform = 'github' } # fallback conservador
+            # Buscar plataforma por CanonicalHost
+            $Platform = 'github'  # fallback
+            foreach ($key in $script:GIPlatformMap.Keys) {
+                if ($script:GIPlatformMap[$key].CanonicalHost -eq $derivedHost) {
+                    $Platform = $key
+                    break
+                }
             }
             Write-GILog -Level DEBUG -Message "Derived platform=$Platform from host=$derivedHost"
         } catch { Write-GILog -Level DEBUG -Message "Platform derivation fallback: $($_.Exception.Message)"; if (-not $Platform) { $Platform='github' } }
@@ -124,11 +138,12 @@ Add-GitIdentity -Alias work -Name "Jane Doe" -Email jane@corp.com -Username jane
         # Configure Windows Credential Manager if needed
         Set-GICredentialHelper -UserHome $userHome -DryRun:$DryRun
 
-        $aliasCfg = Set-GIAliasGitConfig -UserHome $userHome -Alias $Alias -Name $Name -Email $Email -Username $Username -DryRun:$DryRun
+        $sshKeyPath = "~/.ssh/id_${Alias}"
+        $aliasCfg = Set-GIAliasGitConfig -UserHome $userHome -Alias $Alias -Name $Name -Email $Email -Username $Username -SshKeyPath $sshKeyPath -SshUser $effectiveSshUser -DryRun:$DryRun
         Write-GILog -Level DEBUG -Message "Alias gitconfig ensured: $aliasCfg"
         Set-GIIncludeIfBlocks -UserHome $userHome -Alias $Alias -Folders $normalized -DryRun:$DryRun
-        $keyPath = Set-GISshKey -UserHome $userHome -Alias $Alias -Email $Email -Algorithm $effectiveSshAlgorithm -Force:$ForceRegenKeys -DryRun:$DryRun
-        Set-GISshHostBlock -UserHome $userHome -Alias $Alias -Platform $Platform -DryRun:$DryRun | Out-Null
+        $keyPath = Set-GISshKey -UserHome $userHome -Alias $Alias -Email $Email -Algorithm $effectiveSshAlgorithm -Force:$SshForceRegenKeys -DryRun:$DryRun
+        # Set-GISshHostBlock -UserHome $userHome -Alias $Alias -Platform $Platform -DryRun:$DryRun | Out-Null  # Commented out: SSH config now managed via git config core.sshCommand instead
     } catch {
         Write-GILog -Level ERROR -Message "Provisioning error: $($_.Exception.Message)"
     }

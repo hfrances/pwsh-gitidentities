@@ -4,16 +4,28 @@ function Get-GIAliasCanonicalHost {
   param([string]$Alias,[string]$Email)
   if (-not $Alias) { return 'unknown' }
   $a = $Alias.ToLowerInvariant()
-  if ($a -match 'github') { return 'github.com' }
-  if ($a -match 'gitlab') { return 'gitlab.com' }
-  if ($a -match 'azure|devops') { return 'dev.azure.com' }
-  if ($a -match 'bitbucket') { return 'bitbucket.org' }
+  # Buscar en el mapa de plataformas
+  foreach ($platform in $script:GIPlatformMap.Keys) {
+    if ($a -match $platform) { 
+      return $script:GIPlatformMap[$platform].CanonicalHost 
+    }
+  }
+  # Fallback: extraer del email
   if ($Email -and $Email -match '@(.+)$') { return $Matches[1] }
   'unknown'
 }
 
 function Set-GIAliasGitConfig {
-  param([string]$UserHome,[string]$Alias,[string]$Name,[string]$Email,[string]$Username,[switch]$DryRun)
+  param(
+    [string]$UserHome,
+    [string]$Alias,
+    [string]$Name,
+    [string]$Email,
+    [string]$Username,
+    [string]$SshKeyPath,
+    [string[]]$SshUser,
+    [switch]$DryRun
+  )
   if (-not $UserHome -or -not $Alias) { return }
   $file = Join-Path $UserHome ('.gitconfig-' + $Alias)
   $h = Get-GIAliasCanonicalHost -Alias $Alias -Email $Email
@@ -26,6 +38,13 @@ function Set-GIAliasGitConfig {
   $lines += '# managed-by: gitidentities-module alias=' + $Alias + ' section=credential'
   $lines += '[credential "' + $credUrl + '"]'
   $lines += '    username = ' + $Username
+  if ($SshKeyPath -and $SshUser -and $SshUser.Count -gt 0) {
+    $lines += '# managed-by: gitidentities-module alias=' + $Alias + ' section=core'
+    $lines += '[core]'
+    foreach ($user in $SshUser) {
+      $lines += '    sshCommand = ssh -i ' + $SshKeyPath + ' -o User=' + $user + ' -o IdentitiesOnly=yes'
+    }
+  }
   $content = [string]::Join([Environment]::NewLine,$lines)
   Set-GIFileContentIfChanged -Path $file -Content $content -DryRun:$DryRun | Out-Null
   return $file
@@ -46,8 +65,28 @@ function Set-GIIncludeIfBlocks {
     $block += $marker
     $block += '[includeIf "gitdir:' + $norm + '"]'
     $block += '    path = ~/.gitconfig-' + $Alias
-    $text = [string]::Join([Environment]::NewLine,$block)
-    if ($DryRun) { Write-GILog -Level CHANGE -Message "[DryRun] Would append includeIf for $Alias -> $norm" } else { Add-Content -LiteralPath $global -Value $text; Write-GILog -Level CHANGE -Message "Added includeIf for $Alias -> $norm" }
+    if ($DryRun) { 
+      Write-GILog -Level CHANGE -Message "[DryRun] Would append includeIf for $Alias -> $norm"
+    } else { 
+      # Asegurar que hay una línea vacía antes del bloque si el archivo no está vacío
+      $needsNewline = $false
+      if (Test-Path -LiteralPath $global) {
+        $rawContent = [IO.File]::ReadAllText($global, [System.Text.UTF8Encoding]::new($false))
+        if ($rawContent.Length -gt 0 -and -not $rawContent.EndsWith([Environment]::NewLine)) {
+          $needsNewline = $true
+        }
+      }
+      
+      if ($needsNewline) {
+        Add-Content -LiteralPath $global -Value "" -NoNewline:$false
+      }
+      
+      foreach ($line in $block) {
+        Add-Content -LiteralPath $global -Value $line
+      }
+      
+      Write-GILog -Level CHANGE -Message "Added includeIf for $Alias -> $norm"
+    }
   }
 }
 
@@ -64,7 +103,8 @@ function Remove-GIIncludeIfBlocks {
       $match=$true
       if (-not $All -and $targets.Count -gt 0) { $match=$false; foreach($t in $targets){ if($l -like "*folder=$t*"){$match=$true;break} } }
       if ($match) { 
-        if ($i+2 -lt $lines.Count) { $i+=2 }
+        # Saltar las siguientes 2 líneas del bloque (línea includeIf y path)
+        $i+=2
         $removed++
         $msg = if($DryRun){"[DryRun] Would remove includeIf block for $Alias"} else {"Removed includeIf block for $Alias"}
         Write-GILog -Level CHANGE -Message $msg
@@ -147,7 +187,8 @@ function Set-GISshHostBlock {
     if ($existing[$i] -like "*$marker*") { $i++; while($i -lt $existing.Count -and $existing[$i] -notmatch '^Host '){$i++}; $i--; continue }
     $clean += $existing[$i]
   }
-  $hostName = switch($Platform){'github'{'github.com'}'azure'{'ssh.dev.azure.com'}'gitlab'{'gitlab.com'}'bitbucket'{'bitbucket.org'}default{'github.com'}}
+  $platKey = if ($Platform) { $Platform.ToLowerInvariant() } else { 'github' }
+  $hostName = if ($script:GIPlatformMap.ContainsKey($platKey)) { $script:GIPlatformMap[$platKey].HostName } else { 'github.com' }
   $block=@()
   $block += $marker
   $block += 'Host ' + $Alias

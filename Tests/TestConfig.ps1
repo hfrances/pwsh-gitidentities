@@ -39,21 +39,29 @@ $script:TestConfig = @{
             Alias = "mygithub"
             Email = "test@github.com"
             ExpectedHost = "github.com"
+            ExpectedAlgorithm = "ed25519"
+            ExpectedSshUsers = @("git")
         }
         GitLab = @{
             Alias = "workgitlab"
             Email = "test@gitlab.com"
             ExpectedHost = "gitlab.com"
+            ExpectedAlgorithm = "ed25519"
+            ExpectedSshUsers = @("git")
         }
         Azure = @{
             Alias = "corpazure"
             Email = "test@dev.azure.com"
             ExpectedHost = "dev.azure.com"
+            ExpectedAlgorithm = "rsa"
+            ExpectedSshUsers = @("git")  # Note: Azure also uses username, but that's dynamic
         }
         Bitbucket = @{
             Alias = "teambitbucket"
             Email = "test@bitbucket.org"
             ExpectedHost = "bitbucket.org"
+            ExpectedAlgorithm = "ed25519"
+            ExpectedSshUsers = @("git")
         }
     }
     
@@ -62,6 +70,12 @@ $script:TestConfig = @{
         SkipInCI = $true  # Skip actual SSH key generation in CI
         TestKeyTypes = @("ed25519", "rsa")
         TestKeyComments = @("test-key-{0}")
+        # SSH User configurations
+        SshUserTests = @{
+            SingleUser = @("git")
+            MultipleUsers = @("git", "customuser")
+            AzureUsers = @("git", "testuser")  # Azure supports multiple SSH users
+        }
     }
     
     # Error Simulation
