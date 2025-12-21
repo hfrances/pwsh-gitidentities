@@ -159,22 +159,21 @@ function Add-GICredentialHelperToConfig {
         [string]$HelperName
     )
     
-    $credentialBlock = @(
-        "[credential]",
-        "    helper = $HelperName"
-    )
-    
-    if (Test-Path $GitConfigPath) {
-        # Append to existing file
-        $existingContent = Get-Content $GitConfigPath -ErrorAction SilentlyContinue
-        $newContent = $existingContent + "" + $credentialBlock
+    # Usar git config para evitar duplicaciones
+    try {
+        # Crear archivo si no existe
+        if (-not (Test-Path $GitConfigPath)) {
+            New-Item -Path $GitConfigPath -ItemType File -Force | Out-Null
+        }
+        
+        # Usar git config --file para añadir/actualizar el helper
+        git config --file $GitConfigPath credential.helper $HelperName
+        Write-GILog -Level DEBUG -Message "Set credential.helper to $HelperName using git config"
     }
-    else {
-        # Create new file
-        $newContent = $credentialBlock
+    catch {
+        Write-GILog -Level ERROR -Message "Failed to set credential helper: $($_.Exception.Message)"
+        throw
     }
-    
-    Set-Content -Path $GitConfigPath -Value $newContent -Encoding UTF8
 }
 
 function Update-GICredentialHelperInConfig {
@@ -197,27 +196,13 @@ function Update-GICredentialHelperInConfig {
         throw "Git config file not found: $GitConfigPath"
     }
     
-    $content = Get-Content $GitConfigPath
-    $newContent = @()
-    $inCredentialSection = $false
-    
-    foreach ($line in $content) {
-        if ($line.Trim() -match '^\[credential\]$') {
-            $inCredentialSection = $true
-            $newContent += $line
-        }
-        elseif ($line.Trim() -match '^\[.*\]$' -and $line.Trim() -notmatch '^\[credential\]$') {
-            $inCredentialSection = $false
-            $newContent += $line
-        }
-        elseif ($inCredentialSection -and $line.Trim() -match '^\s*helper\s*=\s*(.+)$') {
-            # Replace the helper line
-            $newContent += "    helper = $NewHelper"
-        }
-        else {
-            $newContent += $line
-        }
+    # Usar git config --file para reemplazar el helper
+    try {
+        git config --file $GitConfigPath --replace-all credential.helper $NewHelper
+        Write-GILog -Level DEBUG -Message "Updated credential.helper from $OldHelper to $NewHelper using git config"
     }
-    
-    Set-Content -Path $GitConfigPath -Value $newContent -Encoding UTF8
+    catch {
+        Write-GILog -Level ERROR -Message "Failed to update credential helper: $($_.Exception.Message)"
+        throw
+    }
 }

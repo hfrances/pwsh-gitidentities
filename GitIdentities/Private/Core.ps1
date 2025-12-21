@@ -1,14 +1,39 @@
 # Core reusable helpers
 param()
 
-# Platform map
+# Platform map - Configuración centralizada de todas las plataformas
 $script:GIPlatformMap = @{
-  'github' = @{ HostName='github.com'; CredentialHost='https://github.com/' }
-  'azure' = @{ HostName='ssh.dev.azure.com'; CredentialHost='https://dev.azure.com/' }
-  'gitlab' = @{ HostName='gitlab.com'; CredentialHost='https://gitlab.com/' }
-  'bitbucket' = @{ HostName='bitbucket.org'; CredentialHost='https://bitbucket.org/' }
+  'github' = @{ 
+    HostName='github.com'
+    CredentialHost='https://github.com/'
+    SshAlgorithm='ed25519'
+    SshUsers=@('git')
+    CanonicalHost='github.com'
+  }
+  'azure' = @{ 
+    HostName='ssh.dev.azure.com'
+    CredentialHost='https://dev.azure.com/'
+    SshAlgorithm='rsa'
+    SshUsers=@('git')
+    CanonicalHost='dev.azure.com'
+  }
+  'gitlab' = @{ 
+    HostName='gitlab.com'
+    CredentialHost='https://gitlab.com/'
+    SshAlgorithm='ed25519'
+    SshUsers=@('git')
+    CanonicalHost='gitlab.com'
+  }
+  'bitbucket' = @{ 
+    HostName='bitbucket.org'
+    CredentialHost='https://bitbucket.org/'
+    SshAlgorithm='ed25519'
+    SshUsers=@('git')
+    CanonicalHost='bitbucket.org'
+  }
 }
 $script:GIManagedMarkerPrefix = '# managed-by: gitidentities-module'
+$script:DefaultSshAlgorithm = 'ed25519'
 
 function Get-GIUserHome {
   [CmdletBinding()] param([string]$User)
