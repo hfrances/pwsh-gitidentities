@@ -1,6 +1,7 @@
 # GitIdentities
 
 ![Build](https://github.com/hfrances/pwsh-gitidentities/actions/workflows/ci.yml/badge.svg)
+![PowerShell Gallery](https://img.shields.io/powershellgallery/v/GitIdentities.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 
 **GitIdentities** is a PowerShell module for managing multiple Git and SSH identities automatically. Designed for developers who work with multiple profiles (work, personal, clients) on the same machine.
