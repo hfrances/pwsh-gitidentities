@@ -1,11 +1,17 @@
 param(
-    [string]$OutputPath = "release_notes.txt"
+    [string]$OutputPath = "release_notes.txt",
+    [string]$RepoOwner,
+    [string]$RepoName
 )
 
 Write-Host "=== Generating Changelog ==="
 
+# Get current tag from environment or git
+$currentTag = if ($env:GITHUB_REF -match 'refs/tags/(.+)') { $matches[1] } else { git describe --tags --abbrev=0 }
+Write-Host "Current tag: $currentTag"
+
 # Get previous tag
-$previousTag = git describe --tags --abbrev=0 2>$null
+$previousTag = git describe --tags --abbrev=0 "$currentTag^" 2>$null
 if ($previousTag) {
     $commits = git log "$previousTag..HEAD" --format="%s"
     Write-Host "Commits since $previousTag"
@@ -87,6 +93,8 @@ Test-GitIdentityProvision -Alias work
 ``````
 
 See README.md for complete documentation.
+
+Full Changelog: https://github.com/$RepoOwner/$RepoName/commits/$currentTag
 "@
 
 $releaseNotes | Out-File -FilePath $OutputPath -Encoding utf8

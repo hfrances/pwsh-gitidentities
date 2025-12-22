@@ -76,7 +76,10 @@ jobs:
     - name: Generate Changelog from Commits
       if: startsWith(github.ref, 'refs/tags/v')
       run: |
-        pwsh ./.github/workflows/scripts/Generate-Changelog.ps1 -OutputPath release_notes.txt
+        pwsh ./.github/workflows/scripts/Generate-Changelog.ps1 `
+          -OutputPath release_notes.txt `
+          -RepoOwner "${{ github.repository_owner }}" `
+          -RepoName "${{ github.event.repository.name }}"
       shell: pwsh
     
     - name: Create GitHub Release
