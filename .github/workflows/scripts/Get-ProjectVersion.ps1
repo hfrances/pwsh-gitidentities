@@ -77,7 +77,6 @@ if ($ProjectVersion -match $regex) {
             $dockerAlias = $matches['alias']
         } else {
             $dockerAlias = $prereleaseClean
-            Write-Warning "Invalid alias '$prerelease'"
         }
     }
     elseif ($SourceBranch -in @('refs/heads/master', 'refs/heads/main')) {
@@ -112,7 +111,6 @@ if ($ProjectVersion -match $regex) {
     $result.DockerAlias = $dockerAlias
 }
 else {
-    Write-Warning "Invalid version format: $ProjectVersion"
     $result.IsValidVersion = $false
     $result.Version = $ProjectVersion
 }
