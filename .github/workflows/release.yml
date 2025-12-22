@@ -114,7 +114,7 @@ jobs:
     
     - name: Generate Changelog from Commits
       run: |
-        $isPrerelease = "${{ needs.validate-version.outputs.is_prerelease }}" -eq "true"
+        [bool]$isPrerelease = "${{ needs.validate-version.outputs.is_prerelease }}" -eq "true"
         pwsh ./.github/workflows/scripts/Generate-Changelog.ps1 `
           -OutputPath release_notes.txt `
           -RepoOwner "${{ github.repository_owner }}" `
