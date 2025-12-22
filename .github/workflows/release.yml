@@ -73,6 +73,12 @@ jobs:
         name: GitIdentities-Module
         path: GitIdentities-*.zip
     
+    - name: Generate Changelog from Commits
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: |
+        pwsh ./.github/workflows/scripts/Generate-Changelog.ps1 -OutputPath release_notes.txt
+      shell: pwsh
+    
     - name: Create GitHub Release
       if: startsWith(github.ref, 'refs/tags/v')
       uses: softprops/action-gh-release@v2
@@ -80,7 +86,8 @@ jobs:
         files: GitIdentities-*.zip
         draft: true
         prerelease: true
-        generate_release_notes: true
+        generate_release_notes: false
+        body_path: release_notes.txt
         token: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Publish to PowerShell Gallery
