@@ -65,6 +65,12 @@ jobs:
         Get-ChildItem $releaseDir -Recurse | ForEach-Object { Write-Host "  $($_.FullName)" }
       shell: pwsh
     
+    - name: Upload Release Asset
+      uses: actions/upload-artifact@v4
+      with:
+        name: GitIdentities-Module
+        path: GitIdentities-*.zip
+    
     - name: Upload Release Asset as Draft
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
