@@ -64,8 +64,13 @@ jobs:
         $version = if ($env:GITHUB_REF -match 'refs/tags/v(.+)') { $matches[1] } else { "draft-$(Get-Date -Format yyyyMMdd-HHmmss)" }
         $zipPath = "GitIdentities-$version.zip"
         
-        # Create or update draft release
-        gh release create "v$version" $zipPath --draft --title "Release v$version" --notes "Development build" 2>/dev/null || gh release upload "v$version" $zipPath --clobber
+        # Try to create release, or upload to existing one
+        $releaseExists = gh release view "v$version" 2>$null
+        if ($releaseExists) {
+          gh release upload "v$version" $zipPath --clobber
+        } else {
+          gh release create "v$version" $zipPath --draft --title "Release v$version" --notes "Development build"
+        }
         
         Write-Host "✓ Release asset uploaded: $zipPath"
       shell: pwsh
