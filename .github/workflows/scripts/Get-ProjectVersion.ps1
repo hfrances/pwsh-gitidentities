@@ -38,6 +38,7 @@ $regex = '(?<version>(?<major>\d+)(?:.(?<minor>\d+))(?:.(?<patch>\d+))?(?:.(?<bu
 $result = [ordered]@{
     IsValidVersion = $false
     Version        = $null
+    VersionBlock   = $null
     VersionMajor   = $null
     VersionMinor   = $null
     VersionPatch   = $null
@@ -51,7 +52,8 @@ $result = [ordered]@{
 }
 
 if ($ProjectVersion -match $regex) {
-    $version = $matches['version']
+    $Version = $Matches[0]
+    $versionBlock = $matches['version']
     $major = $matches['major']
     $minor = $matches['minor']
     $patch = if ($matches['patch']) { $matches['patch'] } else { '0' }
@@ -60,6 +62,7 @@ if ($ProjectVersion -match $regex) {
     
     $result.IsValidVersion = $true
     $result.Version = $version
+    $result.VersionBlock = $versionBlock
     $result.VersionMajor = [int]$major
     $result.VersionMinor = [int]$minor
     $result.VersionPatch = [int]$patch
