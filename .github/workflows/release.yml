@@ -27,8 +27,8 @@ jobs:
         # Read existing manifest
         $manifestContent = Get-Content -Path $manifestPath -Raw
         
-        # Update ModuleVersion
-        $manifestContent = $manifestContent -replace "ModuleVersion\s*=\s*['\"].*?['\"]", "ModuleVersion = '$version'"
+        # Update ModuleVersion - simple pattern matching
+        $manifestContent = $manifestContent -replace "ModuleVersion = '.*'", "ModuleVersion = '$version'"
         
         # Write back to file
         Set-Content -Path $manifestPath -Value $manifestContent -Encoding UTF8
