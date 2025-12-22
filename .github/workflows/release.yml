@@ -125,13 +125,13 @@ jobs:
       with:
         files: GitIdentities-*.zip
         draft: false
-        prerelease: ${{ steps.version.outputs.isPrerelease }}
+        prerelease: ${{ steps.version.outputs.is_prerelease }}
         generate_release_notes: false
         body_path: release_notes.txt
         token: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Publish to PowerShell Gallery
-      if: steps.version.outputs.isPrerelease == 'false'
+      if: steps.version.outputs.is_prerelease == 'false'
       run: |
         Write-Host "=== Publishing to PowerShell Gallery ==="
         
