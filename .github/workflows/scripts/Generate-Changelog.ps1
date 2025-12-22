@@ -79,7 +79,7 @@ $releaseNotes += @"
 
 if (-not $IsPrerelease -and $Version) {
     $releaseNotes += @"
-Or install directly from PowerShell Gallery:
+Install directly from PowerShell Gallery:
 
 ``````powershell
 Install-Module -Name GitIdentities -RequiredVersion $Version
@@ -89,6 +89,7 @@ Install-Module -Name GitIdentities -RequiredVersion $Version
 }
 
 $releaseNotes += @"
+Or download the latest release ZIP from GitHub Releases:
 
 ``````powershell
 # Extract the ZIP to your PowerShell modules directory
