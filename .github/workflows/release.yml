@@ -14,6 +14,7 @@ jobs:
     runs-on: windows-latest
     outputs:
       is_valid_version: ${{ steps.validate.outputs.is_valid_version }}
+      is_prerelease: ${{ steps.validate.outputs.is_prerelease }}
       version_info: ${{ steps.validate.outputs.version_info }}
     
     steps:
@@ -35,6 +36,7 @@ jobs:
         
         $versionInfo
         "is_valid_version=$($versionInfo.IsValidVersion)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+        "is_prerelease=$($versionInfo.IsPrerelease)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
         "version_info=$($versionInfo | ConvertTo-Json -Compress)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
       shell: pwsh
 
@@ -96,7 +98,7 @@ jobs:
         Copy-Item -Path "GitIdentities/*" -Destination $releaseDir -Recurse -Force
         
         # Create ZIP package
-        $zipPath = "GitIdentities-$version.zip"
+        $zipPath = "GitIdentities-v$version.zip"
         Compress-Archive -Path $releaseDir -DestinationPath $zipPath
         
         Write-Host "✓ Release package created: $zipPath"
@@ -107,7 +109,7 @@ jobs:
     - name: Upload Release Asset
       uses: actions/upload-artifact@v4
       with:
-        name: GitIdentities-Module
+        name: GitIdentities-v$version
         path: GitIdentities-*.zip
     
     - name: Generate Changelog from Commits
