@@ -5,7 +5,10 @@
 .SYNOPSIS
 Tests Git identity provisioning status.
 .DESCRIPTION
-Reports what artifacts exist or are missing for a given alias: state entry, alias gitconfig, SSH key pair, SSH host block, includeIf entries.
+Validates that all required artifacts exist for a given alias:
+- Per-alias gitconfig file (~/.gitconfig-{alias})
+- SSH key pair (private and public keys)
+- includeIf entries in global ~/.gitconfig for all configured folders
 .PARAMETER Alias
 Identity alias to test.
 .PARAMETER User
