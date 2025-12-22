@@ -22,7 +22,7 @@ jobs:
         Write-Host "=== Updating PowerShell Module Manifest ==="
         
         $manifestPath = "GitIdentities/GitIdentities.psd1"
-        $version = if ($env:GITHUB_REF -match 'refs/tags/v(.+)') { $matches[1] } else { "1.0.0" }
+        $version = if ($env:GITHUB_REF -match 'refs/tags/v(.+)') { $matches[1] } else { "draft-$(Get-Date -Format yyyyMMdd-HHmmss)" }
         
         # Read existing manifest
         $manifestContent = Get-Content -Path $manifestPath -Raw
@@ -39,7 +39,7 @@ jobs:
       run: |
         Write-Host "=== Creating Release Bundle ==="
         
-        $version = if ($env:GITHUB_REF -match 'refs/tags/v(.+)') { $matches[1] } else { "1.0.0" }
+        $version = if ($env:GITHUB_REF -match 'refs/tags/v(.+)') { $matches[1] } else { "draft-$(Get-Date -Format yyyyMMdd-HHmmss)" }
         $releaseDir = "release/GitIdentities-$version"
         
         # Create release directory structure
