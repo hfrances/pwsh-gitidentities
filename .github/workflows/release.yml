@@ -129,7 +129,8 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: GitIdentities-*.zip
-        draft: false
+        name: ${{ steps.version.outputs.version }}
+        draft: true
         prerelease: ${{ needs.validate-version.outputs.is_prerelease }}
         generate_release_notes: false
         body_path: release_notes.txt
