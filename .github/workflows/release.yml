@@ -12,68 +12,51 @@ jobs:
   create-release:
     name: Create Release Package
     runs-on: windows-latest
+    permissions:
+      contents: write
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
-    - name: Setup PowerShell
-      uses: actions/setup-powershell@v1
-      with:
-        powershell-version: '7.x'
     
-    - name: Generate Module Manifest
+    - name: Determine Version
+      id: version
       run: |
-        Write-Host "=== Generating PowerShell Module Manifest ==="
+        $version = if ($env:GITHUB_REF -match 'refs/tags/v(.+)') { $matches[1] } else { "draft-$(Get-Date -Format yyyyMMdd-HHmmss)" }
+        "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+        Write-Host "Version determined: $version"
+      shell: pwsh
+    
+    - name: Update Module Manifest Version
+      run: |
+        Write-Host "=== Updating PowerShell Module Manifest ==="
         
-        $manifestPath = "tools/GitIdentities/GitIdentities.psd1"
-        $version = if ($env:GITHUB_REF -match 'refs/tags/v(.+)') { $matches[1] } else { "1.0.0" }
+        $manifestPath = "GitIdentities/GitIdentities.psd1"
+        $version = "${{ steps.version.outputs.version }}"
         
-        # Get all public functions
-        $publicFunctions = Get-ChildItem "tools/GitIdentities/Public/*.ps1" | ForEach-Object { 
-          [System.IO.Path]::GetFileNameWithoutExtension($_.Name) 
-        }
+        # Read existing manifest
+        $manifestContent = Get-Content -Path $manifestPath -Raw
         
-        $manifestData = @{
-          RootModule = 'GitIdentities.psm1'
-          ModuleVersion = $version
-          GUID = [System.Guid]::NewGuid().ToString()
-          Author = 'GitIdentities Module'
-          CompanyName = 'Unknown'
-          Copyright = "(c) $(Get-Date -Format yyyy) GitIdentities. All rights reserved."
-          Description = 'PowerShell module for managing multiple Git/SSH identities with automatic per-repository configuration'
-          PowerShellVersion = '5.1'
-          FunctionsToExport = $publicFunctions
-          CmdletsToExport = @()
-          VariablesToExport = @()
-          AliasesToExport = @()
-          PrivateData = @{
-            PSData = @{
-              Tags = @('Git', 'SSH', 'Identity', 'Configuration', 'Repository')
-              LicenseUri = 'https://github.com/your-repo/GitIdentities/blob/master/LICENSE'
-              ProjectUri = 'https://github.com/your-repo/GitIdentities'
-              IconUri = ''
-              ReleaseNotes = 'See CHANGELOG.md for release notes'
-            }
-          }
-        }
+        # Update ModuleVersion - simple pattern matching
+        $manifestContent = $manifestContent -replace "ModuleVersion = '.*'", "ModuleVersion = '$version'"
         
-        New-ModuleManifest -Path $manifestPath @manifestData
-        Write-Host "✓ Module manifest created: $manifestPath"
+        # Write back to file
+        Set-Content -Path $manifestPath -Value $manifestContent -Encoding UTF8
+        Write-Host "✓ Module manifest updated: $manifestPath (version: $version)"
       shell: pwsh
     
     - name: Create Module Bundle
       run: |
         Write-Host "=== Creating Release Bundle ==="
         
-        $version = if ($env:GITHUB_REF -match 'refs/tags/v(.+)') { $matches[1] } else { "1.0.0" }
+        $version = "${{ steps.version.outputs.version }}"
         $releaseDir = "release/GitIdentities-$version"
         
         # Create release directory structure
         New-Item -Path $releaseDir -ItemType Directory -Force | Out-Null
         
         # Copy module files
-        Copy-Item -Path "tools/GitIdentities/*" -Destination $releaseDir -Recurse -Force
+        Copy-Item -Path "GitIdentities/*" -Destination $releaseDir -Recurse -Force
         
         # Create ZIP package
         $zipPath = "GitIdentities-$version.zip"
@@ -85,19 +68,20 @@ jobs:
       shell: pwsh
     
     - name: Upload Release Asset
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: GitIdentities-Module
         path: GitIdentities-*.zip
     
     - name: Create GitHub Release
       if: startsWith(github.ref, 'refs/tags/v')
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         files: GitIdentities-*.zip
-        draft: false
-        prerelease: false
+        draft: true
+        prerelease: true
         generate_release_notes: true
+        token: ${{ secrets.GITHUB_TOKEN }}
         body: |
           ## GitIdentities PowerShell Module Release
           
@@ -130,8 +114,6 @@ jobs:
           ```
           
           See README.md for complete documentation.
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   update-documentation:
     name: Update Documentation
@@ -160,7 +142,7 @@ jobs:
         # Generate help documentation using external script
         pwsh ./.github/workflows/scripts/Generate-MarkdownDocs.ps1
         Write-Host '✓ Documentation generation completed'
-        "
+      shell: bash
     
     - name: Deploy to GitHub Pages
       if: github.ref == 'refs/heads/master' 
