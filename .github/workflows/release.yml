@@ -119,12 +119,23 @@ jobs:
   update-documentation:
     name: Update Documentation
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
+    if: startsWith(github.ref, 'refs/tags/v')
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
+    - name: Check if tag is on master
+      id: check_master
+      run: |
+        $branches = git branch -r --contains HEAD
+        if ($branches -match 'origin/master|origin/main') {
+          echo "is_master=true" >> $env:GITHUB_OUTPUT
+        } else {
+          echo "is_master=false" >> $env:GITHUB_OUTPUT
+        }
+      shell: pwsh
+
     - name: Setup Node.js for documentation tools
       uses: actions/setup-node@v3
       with:
@@ -146,7 +157,7 @@ jobs:
       shell: bash
     
     - name: Deploy to GitHub Pages
-      if: github.ref == 'refs/heads/master' 
+      if: steps.check_master.outputs.is_master == 'true'
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
