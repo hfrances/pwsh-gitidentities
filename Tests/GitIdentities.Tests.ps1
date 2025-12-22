@@ -29,7 +29,8 @@ Describe "GitIdentities Module Tests" {
     AfterAll {
         # Cleanup test artifacts
         try {
-            Remove-GitIdentity -Alias $TestAlias -User $TestUser -Confirm:$false -ErrorAction SilentlyContinue
+            Remove-GitIdentity -Alias $TestAlias -User $TestUser -Confirm:$false -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+            Start-Sleep -Milliseconds 100  # Brief pause to allow file handles to release
             if (Test-Path $TestFolder) { Remove-Item $TestFolder -Recurse -Force -ErrorAction SilentlyContinue }
         }
         catch {
