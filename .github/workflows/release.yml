@@ -16,11 +16,6 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
-    - name: Setup PowerShell
-      uses: actions/setup-powershell@v2
-      with:
-        powershell-version: '7.x'
     
     - name: Generate Module Manifest
       run: |
