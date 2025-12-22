@@ -167,18 +167,18 @@ Describe "Test-GitIdentityProvision Unit Tests" {
     Context "Artifact Detection" {
         It "Should accept provision check parameters" {
             # Simplified test - verify function accepts parameters without error
-            { Test-GitIdentityProvision -Alias "test" -User patata -ErrorAction SilentlyContinue } | Should -Not -Throw
+            { Test-GitIdentityProvision -Alias "test" -User patata -ErrorAction SilentlyContinue -WarningAction SilentlyContinue } | Should -Not -Throw
         }
         
         It "Should return a result object" {
             # Simplified test - verify function returns an object
-            $result = Test-GitIdentityProvision -Alias "nonexistent" -User patata -ErrorAction SilentlyContinue
+            $result = Test-GitIdentityProvision -Alias "nonexistent" -User patata -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
             $result | Should -Not -BeNullOrEmpty
         }
         
         It "Should include status properties in result" {
             # Simplified test - verify the result has expected properties
-            $result = Test-GitIdentityProvision -Alias "test" -User patata -ErrorAction SilentlyContinue
+            $result = Test-GitIdentityProvision -Alias "test" -User patata -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
             $result | Get-Member -MemberType NoteProperty | Should -Not -BeNullOrEmpty
         }
     }

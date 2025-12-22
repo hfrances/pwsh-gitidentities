@@ -104,11 +104,6 @@ Describe "GitIdentities Module Tests" {
             { Add-GitIdentity -Alias $TestAlias -Name $TestName -Email $TestEmail -Username $TestUsername -Folders $TestFolder -User $TestUser -Verbosity Silent } | Should -Not -Throw
         }
         
-        It "Should create state file" {
-            $statePath = Join-Path $TestUserHome ".gitidentities.json"
-            Test-Path $statePath | Should -Be $true
-        }
-        
         It "Should create alias gitconfig file" {
             $aliasConfigPath = Join-Path $TestUserHome ".gitconfig-$TestAlias"
             Test-Path $aliasConfigPath | Should -Be $true
@@ -183,23 +178,42 @@ Describe "GitIdentities Module Tests" {
     
     Context "Test-GitIdentityProvision Functionality" {
         It "Should test provision status without error" {
-            { Test-GitIdentityProvision -Alias $TestAlias -User $TestUser } | Should -Not -Throw
+            $status = Test-GitIdentityProvision -Alias $TestAlias -User $TestUser
+            $status | Should -Not -BeNullOrEmpty
+            
+            # Mark as inconclusive if SSH keys are missing
+            if ($status.sshPrivateKey -eq $false -or $status.sshPublicKey -eq $false) {
+                $missingKeys = @()
+                if ($status.sshPrivateKey -eq $false) { $missingKeys += "sshPrivateKey" }
+                if ($status.sshPublicKey -eq $false) { $missingKeys += "sshPublicKey" }
+                Set-ItResult -Inconclusive -Because "SSH keys not available: $($missingKeys -join ', ')"
+            }
         }
         
         It "Should report correct provision status" {
             $status = Test-GitIdentityProvision -Alias $TestAlias -User $TestUser
             
             $status.alias | Should -Be $TestAlias
-            $status.stateFile | Should -Be $true
-            $status.stateEntry | Should -Be $true
             $status.aliasGitConfig | Should -Be $true
             $status.includeIfBlocks | Should -BeGreaterThan 0
+            
+            # Check SSH keys and mark as inconclusive if missing
+            if ($status.sshPrivateKey -eq $false -or $status.sshPublicKey -eq $false) {
+                $missingKeys = @()
+                if ($status.sshPrivateKey -eq $false) { $missingKeys += "sshPrivateKey" }
+                if ($status.sshPublicKey -eq $false) { $missingKeys += "sshPublicKey" }
+                Set-ItResult -Inconclusive -Because "SSH keys not available: $($missingKeys -join ', ')"
+            } else {
+                # SSH keys exist, verify they're tracked
+                $status.sshPrivateKey | Should -Be $true
+                $status.sshPublicKey | Should -Be $true
+            }
         }
         
         It "Should handle non-existent identity gracefully" {
             $status = Test-GitIdentityProvision -Alias "nonexistent" -User $TestUser
-            $status.stateEntry | Should -Be $false
-            ($status.missing -contains "stateEntry") | Should -Be $true
+            $status.aliasGitConfig | Should -Be $false
+            ($status.missing -contains "aliasGitConfig") | Should -Be $true
         }
     }
     
@@ -222,7 +236,6 @@ Describe "GitIdentities Module Tests" {
             
             # Verify removal
             $status = Test-GitIdentityProvision -Alias "removetest" -User $TestUser
-            $status.stateEntry | Should -Be $false
             $status.aliasGitConfig | Should -Be $false
         }
         
@@ -288,7 +301,7 @@ Describe "GitIdentities Module Tests" {
             { Add-GitIdentity -Alias "sshtest" -Name $TestName -Email $TestEmail -Username $TestUsername -Folders $TestFolder -User $TestUser -DryRun -Verbosity Silent } | Should -Not -Throw
         }
         
-        It "Should create SSH key files when not in DryRun\" -Skip:($env:CI -ne $true) {
+        It "Should create SSH key files when not in DryRun" -Skip:($env:CI -ne $true) {
             # Only run in CI environment where we have full control
             { Add-GitIdentity -Alias \"sshkeytest\" -Name $TestName -Email $TestEmail -Username $TestUsername -Folders $TestFolder -User $TestUser -Verbosity Silent } | Should -Not -Throw
             

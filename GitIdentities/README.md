@@ -35,10 +35,9 @@ Automates identity management by:
 ## How It Works
 
 Creates for each identity:
-1. **~/.gitidentities.json**: State tracking
-2. **~/.gitconfig-{alias}**: Identity config with user, credential, and SSH settings
-3. **~/.ssh/id_{alias}**: SSH key pair
-4. **~/.gitconfig additions**: `includeIf` blocks for auto-switching
+1. **~/.gitconfig-{alias}**: Identity config with user, credential, and SSH settings
+2. **~/.ssh/id_{alias}**: SSH key pair
+3. **~/.gitconfig additions**: `includeIf` blocks for auto-switching
 
 **Example ~/.gitconfig-work:**
 ```ini

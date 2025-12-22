@@ -103,37 +103,7 @@ Add-GitIdentity -Alias work -Name "Jane Doe" -Email jane@corp.com -Username jane
     foreach ($f in $Folders) { $nf = Get-GINormalizedFolderPath -Path $f; if ($nf) { $normalized += $nf } }
     if ($normalized.Count -eq 0) { throw 'No valid folders provided.' }
 
-    # Load or build identities state file (module uses its own JSON store under user home)
-    $statePath = Join-Path $userHome '.gitidentities.json'
-    $state = @()
-    if (Test-Path -LiteralPath $statePath) { $state = (Get-Content -LiteralPath $statePath -Raw -Encoding UTF8 | ConvertFrom-Json) }
-    if (-not ($state | Where-Object { $_.alias -eq $Alias })) {
-    $new = [pscustomobject]@{ alias=$Alias; platform=$Platform; name=$Name; email=$Email; username=$Username; folders=@($normalized) }
-        $state = @($state) + @($new)
-    } else {
-        foreach ($id in $state) {
-            if ($id.alias -eq $Alias) {
-                # Merge folders
-                $merged = @($id.folders + $normalized) | Select-Object -Unique
-                $id.folders = $merged
-                # Update core fields (name/email/username/platform) in case changed
-                $id.name = $Name; $id.email=$Email; $id.username=$Username; $id.platform=$Platform
-            }
-        }
-    }
-
-    # Escritura del estado (separada para claridad)
-    if ($DryRun) {
-        Write-GILog -Level CHANGE -Message "[DryRun] Would update state file $statePath"
-    } else {
-        $json = ($state | ConvertTo-Json -Depth 6)
-        [IO.File]::WriteAllText($statePath,$json,[System.Text.UTF8Encoding]::new($false))
-        Write-GILog -Level CHANGE -Message "State file updated: $statePath"
-    }
-
-    # Reuse setup logic by calling internal composite function (implemented later) or replicate minimal actions (placeholder now)
-    # TODO: integrate with full Setup function extraction.
-    # Aprovisionar artefactos en carpeta usuario
+    # Provision artifacts in user folder
     try {
         # Configure Windows Credential Manager if needed
         Set-GICredentialHelper -UserHome $userHome -DryRun:$DryRun
