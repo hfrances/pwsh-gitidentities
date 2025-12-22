@@ -154,7 +154,7 @@ jobs:
         # Generate help documentation using external script
         pwsh ./.github/workflows/scripts/Generate-MarkdownDocs.ps1
         Write-Host '✓ Documentation generation completed'
-      shell: bash
+      shell: pwsh
     
     - name: Deploy to GitHub Pages
       if: steps.check_master.outputs.is_master == 'true'
