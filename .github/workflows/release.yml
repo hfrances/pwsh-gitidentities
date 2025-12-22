@@ -17,44 +17,22 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Generate Module Manifest
+    - name: Update Module Manifest Version
       run: |
-        Write-Host "=== Generating PowerShell Module Manifest ==="
+        Write-Host "=== Updating PowerShell Module Manifest ==="
         
         $manifestPath = "GitIdentities/GitIdentities.psd1"
         $version = if ($env:GITHUB_REF -match 'refs/tags/v(.+)') { $matches[1] } else { "1.0.0" }
         
-        # Get all public functions
-        $publicFunctions = Get-ChildItem "GitIdentities/Public/*.ps1" | ForEach-Object { 
-          [System.IO.Path]::GetFileNameWithoutExtension($_.Name) 
-        }
+        # Read existing manifest
+        $manifestContent = Get-Content -Path $manifestPath -Raw
         
-        $manifestData = @{
-          RootModule = 'GitIdentities.psm1'
-          ModuleVersion = $version
-          GUID = [System.Guid]::NewGuid().ToString()
-          Author = 'GitIdentities Module'
-          CompanyName = 'Unknown'
-          Copyright = "(c) $(Get-Date -Format yyyy) GitIdentities. All rights reserved."
-          Description = 'PowerShell module for managing multiple Git/SSH identities with automatic per-repository configuration'
-          PowerShellVersion = '5.1'
-          FunctionsToExport = $publicFunctions
-          CmdletsToExport = @()
-          VariablesToExport = @()
-          AliasesToExport = @()
-          PrivateData = @{
-            PSData = @{
-              Tags = @('Git', 'SSH', 'Identity', 'Configuration', 'Repository')
-              LicenseUri = 'https://github.com/your-repo/GitIdentities/blob/master/LICENSE'
-              ProjectUri = 'https://github.com/your-repo/GitIdentities'
-              IconUri = ''
-              ReleaseNotes = 'See CHANGELOG.md for release notes'
-            }
-          }
-        }
+        # Update ModuleVersion
+        $manifestContent = $manifestContent -replace "ModuleVersion\s*=\s*['\"].*?['\"]", "ModuleVersion = '$version'"
         
-        New-ModuleManifest -Path $manifestPath @manifestData
-        Write-Host "✓ Module manifest created: $manifestPath"
+        # Write back to file
+        Set-Content -Path $manifestPath -Value $manifestContent -Encoding UTF8
+        Write-Host "✓ Module manifest updated: $manifestPath (version: $version)"
       shell: pwsh
     
     - name: Create Module Bundle
