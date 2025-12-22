@@ -130,9 +130,11 @@ jobs:
       run: |
         $branches = git branch -r --contains HEAD
         if ($branches -match 'origin/master|origin/main') {
-          echo "is_master=true" >> $env:GITHUB_OUTPUT
+          "is_master=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+        } elseif ($branches -match 'origin/github-pipelines') {
+          "is_master=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
         } else {
-          echo "is_master=false" >> $env:GITHUB_OUTPUT
+          "is_master=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
         }
       shell: pwsh
 
