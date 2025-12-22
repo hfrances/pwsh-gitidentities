@@ -73,6 +73,15 @@ jobs:
         name: GitIdentities-Module
         path: GitIdentities-*.zip
     
+    - name: Generate Changelog from Commits
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: |
+        pwsh ./.github/workflows/scripts/Generate-Changelog.ps1 `
+          -OutputPath release_notes.txt `
+          -RepoOwner "${{ github.repository_owner }}" `
+          -RepoName "${{ github.event.repository.name }}"
+      shell: pwsh
+    
     - name: Create GitHub Release
       if: startsWith(github.ref, 'refs/tags/v')
       uses: softprops/action-gh-release@v2
@@ -80,40 +89,32 @@ jobs:
         files: GitIdentities-*.zip
         draft: true
         prerelease: true
-        generate_release_notes: true
+        generate_release_notes: false
+        body_path: release_notes.txt
         token: ${{ secrets.GITHUB_TOKEN }}
-        body: |
-          ## GitIdentities PowerShell Module Release
-          
-          ### Features
-          - ✅ Multi-identity Git/SSH management
-          - ✅ Automatic platform detection (GitHub, GitLab, Azure DevOps, Bitbucket)  
-          - ✅ Per-repository configuration with Git includeIf
-          - ✅ SSH key generation with ed25519/RSA fallback
-          - ✅ Idempotent operations (safe to run multiple times)
-          - ✅ Cross-user profile support
-          - ✅ Comprehensive logging and dry-run mode
-          
-          ### Installation
-          ```powershell
-          # Extract the ZIP to your PowerShell modules directory
-          # Then import the module:
-          Import-Module GitIdentities
-          ```
-          
-          ### Quick Start
-          ```powershell
-          # Add a new identity
-          Add-GitIdentity -Alias work -Name "Your Name" -Email work@company.com -Username workuser -Folders C:\Work\Repos
-          
-          # List all identities  
-          Get-GitIdentities
-          
-          # Test identity status
-          Test-GitIdentityProvision -Alias work
-          ```
-          
-          See README.md for complete documentation.
+    
+    - name: Publish to PowerShell Gallery
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: |
+        Write-Host "=== Publishing to PowerShell Gallery ==="
+        
+        $version = "${{ steps.version.outputs.version }}"
+        $modulePath = "GitIdentities"
+        $apiKey = "${{ secrets.POWERSHELL_GALLERY_API_KEY }}"
+        
+        if (-not $apiKey) {
+          Write-Host "⚠️ POWERSHELL_GALLERY_API_KEY not configured. Skipping publication."
+          exit 0
+        }
+        
+        try {
+          Publish-Module -Path $modulePath -NuGetApiKey $apiKey -Repository PSGallery -Force
+          Write-Host "✓ Module published to PowerShell Gallery (v$version)"
+        } catch {
+          Write-Host "❌ Failed to publish module: $_"
+          exit 1
+        }
+      shell: pwsh
 
   update-documentation:
     name: Update Documentation
