@@ -46,11 +46,13 @@ Test-GitIdentityProvision -Alias work
         $result.sshPrivateKey = $true
     } else {
         $result.missing += 'sshPrivateKey'
+        Write-Warning "SSH private key not found: $privateKey"
     }
     if (Test-Path -LiteralPath $publicKey) {
         $result.sshPublicKey = $true
     } else {
         $result.missing += 'sshPublicKey'
+        Write-Warning "SSH public key not found: $publicKey"
     }
     
     # Check includeIf blocks in global .gitconfig
