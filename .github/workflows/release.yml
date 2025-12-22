@@ -21,11 +21,11 @@ jobs:
       run: |
         Write-Host "=== Generating PowerShell Module Manifest ==="
         
-        $manifestPath = "tools/GitIdentities/GitIdentities.psd1"
+        $manifestPath = "GitIdentities/GitIdentities.psd1"
         $version = if ($env:GITHUB_REF -match 'refs/tags/v(.+)') { $matches[1] } else { "1.0.0" }
         
         # Get all public functions
-        $publicFunctions = Get-ChildItem "tools/GitIdentities/Public/*.ps1" | ForEach-Object { 
+        $publicFunctions = Get-ChildItem "GitIdentities/Public/*.ps1" | ForEach-Object { 
           [System.IO.Path]::GetFileNameWithoutExtension($_.Name) 
         }
         
@@ -68,7 +68,7 @@ jobs:
         New-Item -Path $releaseDir -ItemType Directory -Force | Out-Null
         
         # Copy module files
-        Copy-Item -Path "tools/GitIdentities/*" -Destination $releaseDir -Recurse -Force
+        Copy-Item -Path "GitIdentities/*" -Destination $releaseDir -Recurse -Force
         
         # Create ZIP package
         $zipPath = "GitIdentities-$version.zip"
