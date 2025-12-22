@@ -31,6 +31,9 @@
     # Private data to pass to the module specified in RootModule/ModuleToProcess
     PrivateData = @{
         PSData = @{
+            # Prerelease tag (e.g., 'alpha', 'beta', 'rc1') - null for stable releases
+            Prerelease = $null
+            
             # Tags applied to this module. These help with module discovery in online galleries.
             Tags = @('Git', 'SSH', 'Identity', 'Configuration', 'Repository', 'MultiUser', 'includeIf')
             
