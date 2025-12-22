@@ -86,7 +86,7 @@ Install directly from PowerShell Gallery:
 Install-Module -Name GitIdentities -RequiredVersion $PowershellVersion
 ``````
 
-- or -
+-- or --
 
 
 "@
