@@ -67,15 +67,15 @@ $($other | ForEach-Object { "- $_" } | Out-String)
 $releaseNotes += @"
 ## Installation
 
-\`\`\`powershell
+``````powershell
 # Extract the ZIP to your PowerShell modules directory
 # Then import the module:
 Import-Module GitIdentities
-\`\`\`
+``````
 
 ## Quick Start
 
-\`\`\`powershell
+``````powershell
 # Add a new identity
 Add-GitIdentity -Alias work -Name "Your Name" -Email work@company.com -Username workuser -Folders C:\Work\Repos
 
@@ -84,7 +84,7 @@ Get-GitIdentities
 
 # Test identity status
 Test-GitIdentityProvision -Alias work
-\`\`\`
+``````
 
 See README.md for complete documentation.
 "@
