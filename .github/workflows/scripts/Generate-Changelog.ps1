@@ -3,6 +3,7 @@ param(
     [string]$RepoOwner,
     [string]$RepoName,
     [string]$Version,
+    [string]$PowershellVersion,
     [bool]$IsPrerelease = $false
 )
 
@@ -77,12 +78,12 @@ $releaseNotes += @"
 
 "@
 
-if (-not $IsPrerelease -and $Version) {
+if ($PowershellVersion) {
     $releaseNotes += @"
 Install directly from PowerShell Gallery:
 
 ``````powershell
-Install-Module -Name GitIdentities -RequiredVersion $Version
+Install-Module -Name GitIdentities -RequiredVersion $PowershellVersion
 ``````
 
 --or--

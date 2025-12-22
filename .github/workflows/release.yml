@@ -56,13 +56,31 @@ jobs:
       id: version
       run: |
         $versionInfo = '${{ needs.validate-version.outputs.version_info }}' | ConvertFrom-Json
-        "version=$($versionInfo.Version)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+        $version = $versionInfo.Version
+        $powershellVersion = $versionInfo.DockerVersion
+        
+        # Split version and prerelease (e.g., "2.5.0-alpha.1" -> "2.5.0" and "alpha.1")
+        if ($powershellVersion -match '^(.+?)-(.+)$') {
+          $moduleVersion = $matches[1]
+          $modulePrerelease = $matches[2]
+        } else {
+          $moduleVersion = $version
+          $modulePrerelease = $null
+        }
+        
+        "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+        "powershellVersion=$powershellVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+        "moduleVersion=$moduleVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+        "modulePrerelease=$modulePrerelease" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
         "releaseVersion=$($versionInfo.ReleaseVersion)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
         "releaseAssemblyVersion=$($versionInfo.ReleaseAssemblyVersion)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
         "isPrerelease=$($versionInfo.VersionIsPrerelease)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+        
         Write-Host "Version determined:"
-        Write-Host "  Version: $($versionInfo.Version)"
-        Write-Host "  Release Version: $($versionInfo.ReleaseVersion)"
+        Write-Host "  Version: $version"
+        Write-Host "  Powershell Version: $powershellVersion"
+        Write-Host "   - Module: $moduleVersion"
+        Write-Host "   - Prerelease: $modulePrerelease"
         Write-Host "  Is Prerelease: $($versionInfo.VersionIsPrerelease)"
       shell: pwsh
     
@@ -71,7 +89,8 @@ jobs:
         Write-Host "=== Updating PowerShell Module Manifest ==="
         
         $manifestPath = "GitIdentities/GitIdentities.psd1"
-        $version = "${{ steps.version.outputs.version }}"
+        $version = "${{ steps.version.outputs.moduleVersion }}"
+        $prerelease = "${{ steps.version.outputs.modulePrerelease }}"
         
         # Read existing manifest
         $manifestContent = Get-Content -Path $manifestPath -Raw
@@ -79,16 +98,25 @@ jobs:
         # Update ModuleVersion - simple pattern matching
         $manifestContent = $manifestContent -replace "ModuleVersion = '.*'", "ModuleVersion = '$version'"
         
+        # Update Prerelease - set to prerelease value or $null
+        if ($prerelease -and $prerelease -ne "") {
+          $manifestContent = $manifestContent -replace "Prerelease = \`$null", "Prerelease = '$prerelease'"
+        } else {
+          $manifestContent = $manifestContent -replace "Prerelease = '.*'", "Prerelease = `$null"
+        }
+        
         # Write back to file
         Set-Content -Path $manifestPath -Value $manifestContent -Encoding UTF8
-        Write-Host "✓ Module manifest updated: $manifestPath (version: $version)"
+        Write-Host "✓ Module manifest updated: $manifestPath"
+        Write-Host "  Version: $version"
+        Write-Host "  Prerelease: $(if ($prerelease) { $prerelease } else { 'none (stable)' })"
       shell: pwsh
     
     - name: Create Module Bundle
       run: |
         Write-Host "=== Creating Release Bundle ==="
         
-        $version = "${{ steps.version.outputs.version }}"
+        $version = "${{ steps.version.outputs.powershellVersion }}"
         $releaseDir = "release/GitIdentities-$version"
         
         # Create release directory structure
@@ -109,7 +137,7 @@ jobs:
     - name: Upload Release Asset
       uses: actions/upload-artifact@v4
       with:
-        name: GitIdentities-v${{ steps.version.outputs.version }}
+        name: GitIdentities-v${{ steps.version.outputs.powershellVersion }}
         path: GitIdentities-*.zip
     
     - name: Generate Changelog from Commits
@@ -122,6 +150,7 @@ jobs:
           -RepoOwner "${{ github.repository_owner }}" `
           -RepoName "${{ github.event.repository.name }}" `
           -Version "${{ steps.version.outputs.version }}" `
+          -PowershellVersion "${{ steps.version.outputs.powershellVersion }}" `
           -IsPrerelease:$isPrerelease
       shell: pwsh
     
@@ -141,7 +170,7 @@ jobs:
       run: |
         Write-Host "=== Publishing to PowerShell Gallery ==="
         
-        $version = "${{ steps.version.outputs.version }}"
+        $version = "${{ steps.version.outputs.powershellVersion }}"
         $modulePath = "GitIdentities"
         $apiKey = "${{ secrets.POWERSHELL_GALLERY_API_KEY }}"
         
