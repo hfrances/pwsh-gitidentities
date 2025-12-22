@@ -36,7 +36,7 @@ jobs:
         
         $versionInfo
         "is_valid_version=$($versionInfo.IsValidVersion)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-        "is_prerelease=$($versionInfo.VersionIsPrerelease)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+        "is_prerelease=$($versionInfo.VersionIsPrerelease)".ToLower() | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
         "version_info=$($versionInfo | ConvertTo-Json -Compress)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
       shell: pwsh
 
@@ -131,7 +131,7 @@ jobs:
         files: GitIdentities-*.zip
         name: ${{ steps.version.outputs.version }}
         draft: true
-        prerelease: ${{ needs.validate-version.outputs.is_prerelease }}
+        prerelease: ${{ needs.validate-version.outputs.is_prerelease == 'true' }}
         generate_release_notes: false
         body_path: release_notes.txt
         token: ${{ secrets.GITHUB_TOKEN }}
