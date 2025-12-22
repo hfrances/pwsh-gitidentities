@@ -76,8 +76,8 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: GitIdentities-*.zip
-        draft: false
-        prerelease: false
+        draft: true
+        prerelease: true
         generate_release_notes: true
         body: |
           ## GitIdentities PowerShell Module Release
