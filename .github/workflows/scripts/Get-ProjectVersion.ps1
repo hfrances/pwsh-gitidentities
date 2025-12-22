@@ -52,7 +52,7 @@ $result = [ordered]@{
 }
 
 if ($ProjectVersion -match $regex) {
-    $Version = $Matches[0]
+    $version = $Matches[0]
     $versionBlock = $matches['version']
     $major = $matches['major']
     $minor = $matches['minor']
@@ -74,7 +74,7 @@ if ($ProjectVersion -match $regex) {
         # The version already has its own suffix
         $prereleaseClean = -join ("$prerelease" -split '[^a-zA-Z0-9-]')
         $releaseVersion = "$ProjectVersion+$BuildNumber"
-        $dockerVersion = "$version-$($prereleaseClean)"
+        $dockerVersion = "$versionBlock-$($prereleaseClean)"
         
         if ($prerelease -match '^(?<alias>\w+)') {
             $dockerAlias = $matches['alias']
@@ -91,16 +91,16 @@ if ($ProjectVersion -match $regex) {
     elseif ($SourceBranch -eq 'refs/heads/staging') {
         # Staging has tag "alpha"
         $prereleaseClean = 'alpha'
-        $releaseVersion = "$version-$($prereleaseClean).$BuildNumber"
-        $dockerVersion = "$version-$($prereleaseClean).$BuildNumber"
+        $releaseVersion = "$versionBlock-$($prereleaseClean).$BuildNumber"
+        $dockerVersion = "$versionBlock-$($prereleaseClean).$BuildNumber"
         $dockerAlias = $prereleaseClean
     }
     else {
         # Other branches have the branch name as tag
         $branchName = $SourceBranch -replace 'refs/heads/', ''
         $branchNameClean = -join ("$branchName" -split '[^a-zA-Z0-9]')
-        $releaseVersion = "$version-$($branchNameClean).$BuildNumber"
-        $dockerVersion = "$version-$($branchNameClean).$BuildNumber"
+        $releaseVersion = "$versionBlock-$($branchNameClean).$BuildNumber"
+        $dockerVersion = "$versionBlock-$($branchNameClean).$BuildNumber"
         $dockerAlias = $branchNameClean
     }
 
