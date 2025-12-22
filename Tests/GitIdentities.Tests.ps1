@@ -104,11 +104,6 @@ Describe "GitIdentities Module Tests" {
             { Add-GitIdentity -Alias $TestAlias -Name $TestName -Email $TestEmail -Username $TestUsername -Folders $TestFolder -User $TestUser -Verbosity Silent } | Should -Not -Throw
         }
         
-        It "Should create state file" {
-            $statePath = Join-Path $TestUserHome ".gitidentities.json"
-            Test-Path $statePath | Should -Be $true
-        }
-        
         It "Should create alias gitconfig file" {
             $aliasConfigPath = Join-Path $TestUserHome ".gitconfig-$TestAlias"
             Test-Path $aliasConfigPath | Should -Be $true
@@ -190,16 +185,16 @@ Describe "GitIdentities Module Tests" {
             $status = Test-GitIdentityProvision -Alias $TestAlias -User $TestUser
             
             $status.alias | Should -Be $TestAlias
-            $status.stateFile | Should -Be $true
-            $status.stateEntry | Should -Be $true
             $status.aliasGitConfig | Should -Be $true
+            $status.sshPrivateKey | Should -Be $true
+            $status.sshPublicKey | Should -Be $true
             $status.includeIfBlocks | Should -BeGreaterThan 0
         }
         
         It "Should handle non-existent identity gracefully" {
             $status = Test-GitIdentityProvision -Alias "nonexistent" -User $TestUser
-            $status.stateEntry | Should -Be $false
-            ($status.missing -contains "stateEntry") | Should -Be $true
+            $status.aliasGitConfig | Should -Be $false
+            ($status.missing -contains "aliasGitConfig") | Should -Be $true
         }
     }
     
@@ -222,7 +217,6 @@ Describe "GitIdentities Module Tests" {
             
             # Verify removal
             $status = Test-GitIdentityProvision -Alias "removetest" -User $TestUser
-            $status.stateEntry | Should -Be $false
             $status.aliasGitConfig | Should -Be $false
         }
         
