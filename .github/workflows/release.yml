@@ -114,12 +114,13 @@ jobs:
     
     - name: Generate Changelog from Commits
       run: |
+        $isPrerelease = "${{ needs.validate-version.outputs.is_prerelease }}" -eq "true"
         pwsh ./.github/workflows/scripts/Generate-Changelog.ps1 `
           -OutputPath release_notes.txt `
           -RepoOwner "${{ github.repository_owner }}" `
           -RepoName "${{ github.event.repository.name }}" `
           -Version "${{ steps.version.outputs.version }}" `
-          -IsPrerelease ([bool]::Parse("${{ needs.validate-version.outputs.is_prerelease }}"))
+          -IsPrerelease $isPrerelease
       shell: pwsh
     
     - name: Create GitHub Release
