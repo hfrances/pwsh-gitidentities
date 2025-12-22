@@ -184,6 +184,102 @@ Describe "Test-GitIdentityProvision Unit Tests" {
     }
 }
 
+Describe "Get-GitIdentitySshPublicKey Unit Tests" {
+    BeforeAll {
+        # Import module under test
+        $ModulePath = Join-Path $PSScriptRoot "..\GitIdentities"
+        Import-Module $ModulePath -Force
+        $privatePath = Join-Path $PSScriptRoot '..\GitIdentities\Private'
+        Get-ChildItem "$privatePath\*.ps1" | ForEach-Object { . $_.FullName }
+    }
+    
+    Context "Parameter Validation" {
+        It "Should require Alias parameter" {
+            { Get-GitIdentitySshPublicKey -Alias "" } | Should -Throw
+        }
+        
+        It "Should accept valid Alias parameter" {
+            Mock Get-GIUserHome { return "C:\Users\TestUser" } -ModuleName GitIdentities
+            Mock Test-Path { return $true } -ModuleName GitIdentities
+            Mock Get-Content { return "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI..." } -ModuleName GitIdentities
+            Mock Set-Clipboard { } -ModuleName GitIdentities
+            
+            { Get-GitIdentitySshPublicKey -Alias "test" -User patata -ErrorAction SilentlyContinue -WarningAction SilentlyContinue } | Should -Not -Throw
+        }
+        
+        It "Should accept optional User parameter" {
+            Mock Get-GIUserHome { return "C:\Users\OtherUser" } -ModuleName GitIdentities
+            Mock Test-Path { return $true } -ModuleName GitIdentities
+            Mock Get-Content { return "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI..." } -ModuleName GitIdentities
+            Mock Set-Clipboard { } -ModuleName GitIdentities
+            
+            { Get-GitIdentitySshPublicKey -Alias "test" -User "otheruser" -ErrorAction SilentlyContinue -WarningAction SilentlyContinue } | Should -Not -Throw
+        }
+    }
+    
+    Context "SSH Key Retrieval" {
+        It "Should throw error when public key not found" {
+            Mock Get-GIUserHome { return "C:\Users\TestUser" } -ModuleName GitIdentities
+            Mock Test-Path { return $false } -ModuleName GitIdentities
+            
+            { Get-GitIdentitySshPublicKey -Alias "nonexistent" -User patata -ErrorAction Stop } | Should -Throw
+        }
+        
+        It "Should return object with correct properties" {
+            Mock Get-GIUserHome { return "C:\Users\TestUser" } -ModuleName GitIdentities
+            Mock Test-Path { return $true } -ModuleName GitIdentities
+            Mock Get-Content { return "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI..." } -ModuleName GitIdentities
+            Mock Set-Clipboard { } -ModuleName GitIdentities
+            
+            $result = Get-GitIdentitySshPublicKey -Alias "test" -User patata -ErrorAction SilentlyContinue
+            $result | Should -Not -BeNullOrEmpty
+            $result.alias | Should -Be "test"
+            $result.keyPath | Should -Match "id_test\.pub"
+            $result.content | Should -Match "ssh-ed25519"
+        }
+        
+        It "Should copy to clipboard by default" {
+            Mock Get-GIUserHome { return "C:\Users\TestUser" } -ModuleName GitIdentities
+            Mock Test-Path { return $true } -ModuleName GitIdentities
+            Mock Get-Content { return "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI..." } -ModuleName GitIdentities
+            Mock Set-Clipboard { } -ModuleName GitIdentities
+            
+            Get-GitIdentitySshPublicKey -Alias "test" -User patata -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+            Should -Invoke Set-Clipboard -ModuleName GitIdentities -Times 1
+        }
+        
+        It "Should return content as string when -Content flag is used" {
+            Mock Get-GIUserHome { return "C:\Users\TestUser" } -ModuleName GitIdentities
+            Mock Test-Path { return $true } -ModuleName GitIdentities
+            Mock Get-Content { return "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI..." } -ModuleName GitIdentities
+            
+            $result = Get-GitIdentitySshPublicKey -Alias "test" -User patata -Content -ErrorAction SilentlyContinue
+            $result | Should -BeOfType [string]
+            $result | Should -Match "ssh-ed25519"
+        }
+        
+        It "Should not copy to clipboard when -Content flag is used" {
+            Mock Get-GIUserHome { return "C:\Users\TestUser" } -ModuleName GitIdentities
+            Mock Test-Path { return $true } -ModuleName GitIdentities
+            Mock Get-Content { return "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI..." } -ModuleName GitIdentities
+            Mock Set-Clipboard { } -ModuleName GitIdentities
+            
+            Get-GitIdentitySshPublicKey -Alias "test" -User patata -Content -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+            Should -Invoke Set-Clipboard -ModuleName GitIdentities -Times 0
+        }
+        
+        It "Should build correct key path" {
+            Mock Get-GIUserHome { return "C:\Users\TestUser" } -ModuleName GitIdentities
+            Mock Test-Path { return $true } -ModuleName GitIdentities
+            Mock Get-Content { return "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI..." } -ModuleName GitIdentities
+            Mock Set-Clipboard { } -ModuleName GitIdentities
+            
+            $result = Get-GitIdentitySshPublicKey -Alias "myalias" -User patata -ErrorAction SilentlyContinue
+            $result.keyPath | Should -Match "id_myalias\.pub"
+        }
+    }
+}
+
 Describe "Set-GICredentialHelper Unit Tests" {
     BeforeAll {
         # Import module under test
