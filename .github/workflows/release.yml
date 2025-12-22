@@ -36,7 +36,7 @@ jobs:
         
         $versionInfo
         "is_valid_version=$($versionInfo.IsValidVersion)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-        "is_prerelease=$($versionInfo.IsPrerelease)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+        "is_prerelease=$($versionInfo.VersionIsPrerelease)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
         "version_info=$($versionInfo | ConvertTo-Json -Compress)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
       shell: pwsh
 
