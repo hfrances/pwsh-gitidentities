@@ -8,11 +8,6 @@ param(
     [switch]$AsJson
 )
 
-Write-Host "=== Validating Release Version ==="
-Write-Host "Project Version: $ProjectVersion"
-Write-Host "Source Branch: $SourceBranch"
-Write-Host "Build Number: $BuildNumber"
-
 ############################################################
 # Establecer la versión release:
 # Si la versión contiene un <prerelease>:
@@ -56,8 +51,6 @@ $result = [ordered]@{
 }
 
 if ($ProjectVersion -match $regex) {
-    Write-Host "✓ Valid semantic version format"
-    
     $version = $matches['version']
     $major = $matches['major']
     $minor = $matches['minor']
