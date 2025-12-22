@@ -109,7 +109,7 @@ jobs:
     - name: Upload Release Asset
       uses: actions/upload-artifact@v4
       with:
-        name: GitIdentities-v$version
+        name: GitIdentities-v${{ steps.version.outputs.version }}
         path: GitIdentities-*.zip
     
     - name: Generate Changelog from Commits
@@ -117,7 +117,9 @@ jobs:
         pwsh ./.github/workflows/scripts/Generate-Changelog.ps1 `
           -OutputPath release_notes.txt `
           -RepoOwner "${{ github.repository_owner }}" `
-          -RepoName "${{ github.event.repository.name }}"
+          -RepoName "${{ github.event.repository.name }}" `
+          -Version "${{ steps.version.outputs.version }}" `
+          -IsPrerelease ([bool]::Parse("${{ needs.validate-version.outputs.is_prerelease }}"))
       shell: pwsh
     
     - name: Create GitHub Release

@@ -1,7 +1,9 @@
 param(
     [string]$OutputPath = "release_notes.txt",
     [string]$RepoOwner,
-    [string]$RepoName
+    [string]$RepoName,
+    [string]$Version,
+    [bool]$IsPrerelease = $false
 )
 
 Write-Host "=== Generating Changelog ==="
@@ -72,6 +74,21 @@ $($other | ForEach-Object { "- $_" } | Out-String)
 
 $releaseNotes += @"
 ## Installation
+
+"@
+
+if (-not $IsPrerelease -and $Version) {
+    $releaseNotes += @"
+Or install directly from PowerShell Gallery:
+
+``````powershell
+Install-Module -Name GitIdentities -RequiredVersion $Version
+``````
+
+"@
+}
+
+$releaseNotes += @"
 
 ``````powershell
 # Extract the ZIP to your PowerShell modules directory
