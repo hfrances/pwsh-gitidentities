@@ -13,7 +13,8 @@
     # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry
     FunctionsToExport = @(
         'Add-GitIdentity',
-        'Get-GitIdentities', 
+        'Get-GitIdentities',
+        'Get-GitIdentitySshPublicKey',
         'Remove-GitIdentity',
         'Test-GitIdentityProvision'
     )
