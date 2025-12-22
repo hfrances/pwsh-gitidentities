@@ -160,7 +160,7 @@ jobs:
         # Generate help documentation using external script
         pwsh ./.github/workflows/scripts/Generate-MarkdownDocs.ps1
         Write-Host '✓ Documentation generation completed'
-        "
+      shell: bash
     
     - name: Deploy to GitHub Pages
       if: github.ref == 'refs/heads/master' 
