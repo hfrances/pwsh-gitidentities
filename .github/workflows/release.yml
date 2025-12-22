@@ -128,8 +128,11 @@ jobs:
     - name: Check if tag is on master
       id: check_master
       run: |
-        $branches = git branch -r --contains HEAD
+        $tag = $env:GITHUB_REF -replace 'refs/tags/', ''
+        Write-Host "Checking tag: $tag"
+        $branches = git branch -r --contains $tag
         Write-Host "Tag is on branches: $branches"
+        
         if ($branches -match 'origin/master|origin/main') {
           "is_master=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           Write-Host "✓ Tag is on master/main branch"
