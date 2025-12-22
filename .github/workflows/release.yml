@@ -79,6 +79,7 @@ jobs:
         draft: true
         prerelease: true
         generate_release_notes: true
+        token: ${{ secrets.GITHUB_TOKEN }}
         body: |
           ## GitIdentities PowerShell Module Release
           
@@ -111,8 +112,6 @@ jobs:
           ```
           
           See README.md for complete documentation.
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   update-documentation:
     name: Update Documentation
