@@ -57,11 +57,18 @@ jobs:
         Get-ChildItem $releaseDir -Recurse | ForEach-Object { Write-Host "  $($_.FullName)" }
       shell: pwsh
     
-    - name: Upload Release Asset
-      uses: actions/upload-artifact@v4
-      with:
-        name: GitIdentities-Module
-        path: GitIdentities-*.zip
+    - name: Upload Release Asset as Draft
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        $version = if ($env:GITHUB_REF -match 'refs/tags/v(.+)') { $matches[1] } else { "draft-$(Get-Date -Format yyyyMMdd-HHmmss)" }
+        $zipPath = "GitIdentities-$version.zip"
+        
+        # Create or update draft release
+        gh release create "v$version" $zipPath --draft --title "Release v$version" --notes "Development build" 2>/dev/null || gh release upload "v$version" $zipPath --clobber
+        
+        Write-Host "✓ Release asset uploaded: $zipPath"
+      shell: pwsh
     
     - name: Create GitHub Release
       if: startsWith(github.ref, 'refs/tags/v')
