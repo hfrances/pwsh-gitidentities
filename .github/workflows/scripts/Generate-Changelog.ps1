@@ -85,11 +85,13 @@ Install directly from PowerShell Gallery:
 Install-Module -Name GitIdentities -RequiredVersion $Version
 ``````
 
+--or--
+
 "@
 }
 
 $releaseNotes += @"
-Or download the latest release ZIP from GitHub Releases and extract the ZIP to your PowerShell modules directory.
+Download the latest release ZIP from GitHub Releases and extract the ZIP to your PowerShell modules directory.
 Then import the module:
 
 ``````powershell
