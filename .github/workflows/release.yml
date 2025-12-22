@@ -30,7 +30,7 @@ jobs:
         $versionInfo = pwsh ./.github/workflows/scripts/Get-ProjectVersion.ps1 `
           -ProjectVersion $tag `
           -SourceBranch $env:GITHUB_REF `
-          -BuildNumber $env:GITHUB_RUN_NUMBER 
+          -BuildNumber $env:GITHUB_RUN_NUMBER `
           -AsJson| ConvertFrom-Json
         
         $versionInfo
