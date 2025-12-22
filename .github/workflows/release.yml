@@ -114,6 +114,29 @@ jobs:
           ```
           
           See README.md for complete documentation.
+    
+    - name: Publish to PowerShell Gallery
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: |
+        Write-Host "=== Publishing to PowerShell Gallery ==="
+        
+        $version = "${{ steps.version.outputs.version }}"
+        $modulePath = "GitIdentities"
+        $apiKey = "${{ secrets.POWERSHELL_GALLERY_API_KEY }}"
+        
+        if (-not $apiKey) {
+          Write-Host "⚠️ POWERSHELL_GALLERY_API_KEY not configured. Skipping publication."
+          exit 0
+        }
+        
+        try {
+          Publish-Module -Path $modulePath -NuGetApiKey $apiKey -Repository PSGallery -Force
+          Write-Host "✓ Module published to PowerShell Gallery (v$version)"
+        } catch {
+          Write-Host "❌ Failed to publish module: $_"
+          exit 1
+        }
+      shell: pwsh
 
   update-documentation:
     name: Update Documentation
