@@ -138,18 +138,18 @@ Information is gathered from:
   $objects = @()
   foreach ($k in $results.Keys | Sort-Object) {
     $obj = $results[$k]
-    # Platform: derivar del primer host de credentials si existe
+    # Platform: derivar del primer dominio de credentials si existe
     $obj.platform = $null
     if ($obj.PSObject.Properties.Name -contains 'credentials' -and $obj.credentials -and $obj.credentials.Count -gt 0) {
       $firstCred = ($obj.credentials | Where-Object { $_.url })[0]
       if ($firstCred) {
         $u = $firstCred.url
         if ($u.EndsWith('/')) { $u = $u.TrimEnd('/') }
-        $host = $null
-        if ($u -match '^[a-zA-Z][a-zA-Z0-9+.-]*://([^/]+)') { $host = $Matches[1] }
-        elseif ($u -match '^([^/]+)(/|$)') { $host = $Matches[1] }
-        if ($host) {
-          $hl = $host.ToLowerInvariant()
+        $domain = $null
+        if ($u -match '^[a-zA-Z][a-zA-Z0-9+.-]*://([^/]+)') { $domain = $Matches[1] }
+        elseif ($u -match '^([^/]+)(/|$)') { $domain = $Matches[1] }
+        if ($domain) {
+          $hl = $domain.ToLowerInvariant()
           switch ($hl) {
             'github.com' { $obj.platform='github' }
             'dev.azure.com' { $obj.platform='azure' }
