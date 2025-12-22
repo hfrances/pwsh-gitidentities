@@ -89,11 +89,10 @@ Install-Module -Name GitIdentities -RequiredVersion $Version
 }
 
 $releaseNotes += @"
-Or download the latest release ZIP from GitHub Releases:
+Or download the latest release ZIP from GitHub Releases and extract the ZIP to your PowerShell modules directory.
+Then import the module:
 
 ``````powershell
-# Extract the ZIP to your PowerShell modules directory
-# Then import the module:
 Import-Module GitIdentities
 ``````
 
