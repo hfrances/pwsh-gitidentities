@@ -131,10 +131,13 @@ jobs:
         $branches = git branch -r --contains HEAD
         if ($branches -match 'origin/master|origin/main') {
           "is_master=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "✓ Tag is on master/main branch"
         } elseif ($branches -match 'origin/github-pipelines') {
           "is_master=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "✓ Tag is on github-pipelines branch"
         } else {
           "is_master=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "⚠️ Tag is not on master/main/github-pipelines branch"
         }
       shell: pwsh
 
